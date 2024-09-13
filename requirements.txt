@@ -5,3 +5,4 @@ numpy
 bumpversion
 scikit-learn
 scipy
+pyvista

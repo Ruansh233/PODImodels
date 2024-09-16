@@ -15,11 +15,11 @@ class PODImodelAbstract(ABC):
     """
 
     @abstractmethod
-    def fit(self, points, values):
+    def fit(self, x, y):
         """Abstract `fit`"""
 
     @abstractmethod
-    def predict(self, new_point):
+    def predict(self, new_x):
         """Abstract `predict`"""
 
     def validate(self, x, y, training_ratio=0.8, rand_seed=42):

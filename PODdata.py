@@ -102,10 +102,10 @@ class subdomainDataSet:
             self.cell_coeffs.T @ self.patch_data
         )
 
-        if self.cal_fullData:
-            self.projPatch_modes_all = np.diag(np.power(self.singulars_all, -2)) @ (
-                self.cell_coeffs_all.T @ self.patch_data
-            )
+        # if self.cal_fullData:
+        #     self.projPatch_modes_all = np.diag(np.power(self.singulars_all, -2)) @ (
+        #         self.cell_coeffs_all.T @ self.patch_data
+        #     )
 
     def truncationError(self):
         return truncationErrorCal(self.singulars_all)

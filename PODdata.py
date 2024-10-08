@@ -11,11 +11,10 @@ def vtk_writer(
         if block is not None:
             if data_type == "scalar":
                 for data_i in range(len(field_name)):
-                    block.data[field_name[data_i]] = field_data[data_i]
+                    block.cell_data[field_name[data_i]] = field_data[data_i]
             elif data_type == "vector":
                 for data_i in range(len(field_name)):
-                    field = field_data[data_i].reshape(3, -1).T
-                    block.data[field_name[data_i]] = field
+                    block.cell_data[field_name[data_i]] = field_data[data_i].reshape(3, -1).T
             if points_data is not None:
                 points = points_data.reshape(3, -1).T
                 block.points = points
@@ -63,7 +62,7 @@ class PODDataSet:
         # loop all test data and write the data into VTK file
         for i in range(len(field_name)):
             vtk_writer(
-                self.cell_modes,
+                self.cell_modes[:rank],
                 field_name,
                 dataType,
                 refVTM,
@@ -101,11 +100,6 @@ class subdomainDataSet:
         self.projPatch_modes = np.diag(np.power(self.singulars, -2)) @ (
             self.cell_coeffs.T @ self.patch_data
         )
-
-        # if self.cal_fullData:
-        #     self.projPatch_modes_all = np.diag(np.power(self.singulars_all, -2)) @ (
-        #         self.cell_coeffs_all.T @ self.patch_data
-        #     )
 
     def truncationError(self):
         return truncationErrorCal(self.singulars_all)

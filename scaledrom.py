@@ -19,12 +19,9 @@ class maxMinScalar:
 
 
 class scaledROM:
-    def __init__(self, x, y, scalar, ROM, train_size=0.8):
-        self.x = x
-        self.y = y
+    def __init__(self, scalar, ROM):
         self.scalar = scalar
         self.ROM = ROM
-        self.train_size = train_size
 
     def scale_data(self, y):
         self.tmpscalar = self.scalar(y)
@@ -33,14 +30,28 @@ class scaledROM:
     def data_split(self, x, y, train_size):
         return train_test_split(x, y, train_size=train_size, random_state=42)
 
-    def validate(self):
-        data = self.scale_data(self.y)
-        params_train, params_test, data_train, data_test = self.data_split(
-            self.x, data, self.train_size
+    def fit(self, x, y):
+        data = self.scale_data(y)
+        self.ROM.fit(x, data)
+
+    def predict(self, x):
+        return self.ROM.predict(x)
+
+    def validate(self, x, y, training_ratio=0.8, rand_seed=42, norm="Frobenius"):
+        y = self.scale_data(y)
+        x_train, x_test, y_train, y_test = train_test_split(
+            x, y, train_size=training_ratio, random_state=rand_seed
         )
-        tmpROM = self.ROM
-        tmpROM.fit(params_train, data_train)
-        return np.linalg.norm(
-            self.tmpscalar.inverse_transform(data_test)
-            - self.tmpscalar.inverse_transform(tmpROM.predict(params_test))
-        ) / np.linalg.norm(self.tmpscalar.inverse_transform(data_test))
+
+        self.fit(x_train, y_train)
+
+        if norm == "Frobenius":
+            return np.linalg.norm(
+                self.tmpscalar.inverse_transform(y_test)
+                - self.tmpscalar.inverse_transform(self.predict(x_test))
+            ) / np.linalg.norm(self.tmpscalar.inverse_transform(y_test))
+        elif norm == "inf":
+            return np.max(np.abs(y_test - self.predict(x_test)))
+        else:
+            print("Please enter variable norm with value 'Frobenius' or 'inf'")
+            assert False

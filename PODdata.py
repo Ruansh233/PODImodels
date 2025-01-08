@@ -60,14 +60,17 @@ class PODDataSet:
         field_name = [f"mode_{i}" for i in range(rank)]
 
         # loop all test data and write the data into VTK file
-        for i in range(len(field_name)):
-            vtk_writer(
-                self.cell_modes[:rank],
-                field_name,
-                dataType,
-                refVTM,
-                saveFileName,
-            )
+        vtk_writer(
+            self.cell_modes_all[:rank],
+            field_name,
+            dataType,
+            refVTM,
+            saveFileName,
+        )
+
+        # write the truncation error and singular values into txt file
+        np.savetxt(f"{saveFileName}_truncationError.txt", self.truncationError())
+        np.savetxt(f"{saveFileName}_singulars.txt", self.singulars_all)
 
 
 class subdomainDataSet:

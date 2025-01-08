@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PODImodels"
+authors = [
+    {name = "Shenhui_Ruan", email = "shenhui.ruan@kit.edu"}
+]
+description = "A py package to create ROM utilizing PODI method"
+version = "0.0.1"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "scikit-learn",
+    "scipy",
+    "pyvista"
+]
+
+[tool.setuptools]
+py-modules = [
+    "podImodelabstract",
+    "PODdata",
+    "scaledrom",
+    "PODImodels"
+]

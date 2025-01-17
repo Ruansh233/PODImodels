@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+import pyvista as pv
+from PODdata import vtk_writer
 
 
 class PODImodelAbstract(ABC):
@@ -37,3 +39,27 @@ class PODImodelAbstract(ABC):
         else:
             print("Please enter variable norm with value 'Frobenius' or 'inf'")
             assert False
+
+    def reconstruct(self, x, y, refVTMName, saveFileName, dataType, is2D=False):
+        x_train, x_test, y_train, y_test = train_test_split(
+            x, y, train_size=0.8, random_state=42
+        )
+        self.fit(x_train, y_train)
+
+        # Write the velocity data into VTK file
+        refVTM = pv.MultiBlock(refVTMName)
+        field_name = (
+            [f"true_{i}" for i in range(x_test.shape[0])]
+            + [f"rec_{i}" for i in range(x_test.shape[0])]
+            + [f"err_{i}" for i in range(x_test.shape[0])]
+        )
+
+        # loop all test data and write the data into VTK file
+        vtk_writer(
+            np.vstack((y_test, self.predict(x_test), y_test - self.predict(x_test))),
+            field_name,
+            dataType,
+            refVTM,
+            saveFileName,
+            is2D=is2D,
+        )

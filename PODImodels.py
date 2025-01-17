@@ -2,11 +2,47 @@ import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 from sklearn.linear_model import Ridge
+from sklearn.linear_model import LinearRegression
 from scipy.linalg import svd
 from scipy.interpolate import RBFInterpolator
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from podImodelabstract import PODImodelAbstract
+
+
+class fieldsLinear(PODImodelAbstract):
+    def __init__(self):
+        self.lin = LinearRegression()
+
+    def fit(self, x, y):
+        self.lin.fit(x, y)
+
+    def predict(self, x):
+        return self.lin.predict(x)
+    
+
+class PODLinear(PODImodelAbstract):
+    def __init__(self, rank=10, with_scalar=True):
+        self.lin = LinearRegression()
+        self.rank = rank
+        self.with_scalar = with_scalar
+
+    def fit(self, x, y):
+        v = svd(y, full_matrices=False)[2]
+        self.v = v[: self.rank]
+        y = y @ self.v.T
+
+        if self.with_scalar:
+            self.coeffs_scalar = MinMaxScaler()
+            y = self.coeffs_scalar.fit_transform(y)
+
+        self.lin.fit(x, y)
+
+    def predict(self, x):
+        if self.with_scalar:
+            return self.coeffs_scalar.inverse_transform(self.lin.predict(x)) @ self.v
+        else:
+            return self.lin.predict(x) @ self.v
 
 
 class fieldsRidge(PODImodelAbstract):

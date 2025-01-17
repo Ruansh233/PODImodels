@@ -4,8 +4,10 @@ import pyvista as pv
 
 
 def vtk_writer(
-    field_data, field_name, data_type, refVTM, save_path_name, points_data=None
-):
+    field_data, field_name, data_type, refVTMName, save_path_name, 
+    points_data=None, is2D=False
+):  
+    refVTM = pv.MultiBlock(refVTMName)
     for block_i in range(refVTM.n_blocks):
         block = refVTM[block_i]
         if block is not None:
@@ -13,8 +15,13 @@ def vtk_writer(
                 for data_i in range(len(field_name)):
                     block.cell_data[field_name[data_i]] = field_data[data_i]
             elif data_type == "vector":
-                for data_i in range(len(field_name)):
-                    block.cell_data[field_name[data_i]] = field_data[data_i].reshape(3, -1).T
+                if is2D:
+                    for data_i in range(len(field_name)):
+                        block.cell_data[field_name[data_i]] = np.hstack((field_data[data_i].reshape(2, -1).T,
+                                                                        np.zeros((block.n_cells, 1)))) 
+                else:
+                    for data_i in range(len(field_name)):
+                        block.cell_data[field_name[data_i]] = field_data[data_i].reshape(3, -1).T
             if points_data is not None:
                 points = points_data.reshape(3, -1).T
                 block.points = points
@@ -54,9 +61,8 @@ class PODDataSet:
     def printInfo(self):
         print("The POD rank is: ", self.rank)
 
-    def saveModes(self, saveFileName, refVTMName, dataType, rank=10):
+    def saveModes(self, saveFileName, refVTMName, dataType, rank=10, is2D=False):
         # Write the velocity data into VTK file
-        refVTM = pv.MultiBlock(refVTMName)
         field_name = [f"mode_{i}" for i in range(rank)]
 
         # loop all test data and write the data into VTK file
@@ -64,8 +70,9 @@ class PODDataSet:
             self.cell_modes_all[:rank],
             field_name,
             dataType,
-            refVTM,
+            refVTMName,
             saveFileName,
+            is2D=is2D
         )
 
         # write the truncation error and singular values into txt file

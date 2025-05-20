@@ -24,6 +24,27 @@ class PODImodelAbstract(ABC):
     def predict(self, new_x):
         """Abstract `predict`"""
 
+    def frobenius_norm(self, x, y, separate_err=False):
+        if separate_err:
+            err = []
+            y_pred = self.predict(x)
+            for i in range(len(x)):
+                err.append(np.linalg.norm(y[i] - y_pred[i]) / 
+                                          np.linalg.norm(y[i]))
+            return np.array(err)
+        else:
+            return np.linalg.norm(y - self.predict(x)) / np.linalg.norm(y)
+    
+    def inf_norm(self, x, y, separate_err=False):
+        if separate_err:
+            err = []
+            y_pred = self.predict(x)
+            for i in range(len(x)):
+                err.append(np.linalg.norm(y[i] - y_pred[i], ord=np.inf))
+            return np.array(err)
+        else:
+            return np.linalg.norm(y - self.predict(x), ord=np.inf)
+    
     def validate(self, x, y, training_ratio=0.8, rand_seed=42, norm="Frobenius"):
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=training_ratio, random_state=rand_seed
@@ -31,11 +52,9 @@ class PODImodelAbstract(ABC):
         self.fit(x_train, y_train)
 
         if norm == "Frobenius":
-            return np.linalg.norm(y_test - self.predict(x_test)) / np.linalg.norm(
-                y_test
-            )
+            return self.frobenius_norm(x_test, y_test)
         elif norm == "inf":
-            return np.max(np.abs(y_test - self.predict(x_test)))
+            return self.inf_norm(x_test, y_test)
         else:
             print("Please enter variable norm with value 'Frobenius' or 'inf'")
             assert False
@@ -63,3 +82,15 @@ class PODImodelAbstract(ABC):
             saveFileName,
             is2D=is2D,
         )
+
+    def fixed_validate(self, x_train, y_train, x_test, y_test, norm="Frobenius",
+                       separate_err=False):
+        self.fit(x_train, y_train)
+
+        if norm == "Frobenius":
+            return self.frobenius_norm(x_test, y_test, separate_err)
+        elif norm == "inf":
+            return self.inf_norm(x_test, y_test, separate_err)
+        else:
+            print("Please enter variable norm with value 'Frobenius' or 'inf'")
+            assert False

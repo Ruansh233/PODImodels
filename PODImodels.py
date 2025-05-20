@@ -22,7 +22,7 @@ class fieldsLinear(PODImodelAbstract):
     
 
 class PODLinear(PODImodelAbstract):
-    def __init__(self, rank=10, with_scalar=True):
+    def __init__(self, rank=10, with_scalar=False):
         self.lin = LinearRegression()
         self.rank = rank
         self.with_scalar = with_scalar
@@ -57,7 +57,7 @@ class fieldsRidge(PODImodelAbstract):
 
 
 class PODRidge(PODImodelAbstract):
-    def __init__(self, rank=10, with_scalar=True):
+    def __init__(self, rank=10, with_scalar=False):
         self.lin = Ridge()
         self.rank = rank
         self.with_scalar = with_scalar
@@ -96,7 +96,7 @@ class fieldsGPR(PODImodelAbstract):
 
 
 class PODGPR(PODImodelAbstract):
-    def __init__(self, kernel=None, alpha=1.0e-10, rank=10, with_scalar=True):
+    def __init__(self, kernel=None, alpha=1.0e-10, rank=10, with_scalar=False):
         if kernel is None:
             self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
@@ -142,7 +142,7 @@ class fieldsRidgeGPR(PODImodelAbstract):
 
 
 class PODRidgeGPR(PODImodelAbstract):
-    def __init__(self, kernel=None, alpha=1.0e-10, rank=10, with_scalar=True):
+    def __init__(self, kernel=None, alpha=1.0e-10, rank=10, with_scalar=False):
         if kernel is None:
             self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
@@ -189,7 +189,7 @@ class fieldsRBF(PODImodelAbstract):
 
 class PODRBF(PODImodelAbstract):
     def __init__(
-        self, kernel="linear", epsilon=1.0, rank=10, with_scalar=True, neighbors=None
+        self, kernel="linear", epsilon=1.0, rank=10, with_scalar=False, neighbors=None
     ):
         self.kernel = kernel
         self.epsilon = epsilon
@@ -235,7 +235,7 @@ class fieldsRidgeRBF(PODImodelAbstract):
 
 
 class PODRidgeRBF(PODImodelAbstract):
-    def __init__(self, kernel="linear", epsilon=1.0, rank=10, with_scalar=True):
+    def __init__(self, kernel="linear", epsilon=1.0, rank=10, with_scalar=False):
         self.kernel = kernel
         self.epsilon = epsilon
         self.lin = Ridge()

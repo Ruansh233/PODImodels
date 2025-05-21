@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 import pyvista as pv
 from PODdata import vtk_writer
+from scipy.linalg import svd
 
 
 class PODImodelAbstract(ABC):
@@ -94,3 +95,39 @@ class PODImodelAbstract(ABC):
         else:
             print("Please enter variable norm with value 'Frobenius' or 'inf'")
             assert False
+
+    def reduction(self, y):
+        u, s, self.v_all = svd(y, full_matrices=False)
+        self.coeffs = u @ np.diag(s)
+
+    def multi_validate(self, x, y, ranks, training_ratio=0.8, rand_seed=42, norm="Frobenius"):
+        x_train, x_test, y_train, y_test = train_test_split(
+            x, y, train_size=training_ratio, random_state=rand_seed
+        )
+        self.errors = []
+        for i in ranks:
+            self.rank = i
+            self.fit(x_train, y_train)
+            if norm == "Frobenius":
+                self.errors.append(self.frobenius_norm(x_test, y_test))
+            elif norm == "inf":
+                self.errors.append(self.inf_norm(x_test, y_test))
+            else:
+                print("Please enter variable norm with value 'Frobenius' or 'inf'")
+                assert False
+        return np.array(self.errors)
+
+    def multi_validate_fixed(self, x_train, y_train, x_test, y_test, ranks,
+                             norm="Frobenius", separate_err=False):
+        self.errors = []
+        for i in ranks:
+            self.rank = i
+            self.fit(x_train, y_train)
+            if norm == "Frobenius":
+                self.errors.append(self.frobenius_norm(x_test, y_test, separate_err))
+            elif norm == "inf":
+                self.errors.append(self.inf_norm(x_test, y_test, separate_err))
+            else:
+                print("Please enter variable norm with value 'Frobenius' or 'inf'")
+                assert False
+        return np.array(self.errors)

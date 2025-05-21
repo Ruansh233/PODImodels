@@ -28,9 +28,12 @@ class PODLinear(PODImodelAbstract):
         self.with_scalar = with_scalar
 
     def fit(self, x, y):
-        v = svd(y, full_matrices=False)[2]
-        self.v = v[: self.rank]
-        y = y @ self.v.T
+        if not hasattr(self, 'v_all'):
+            self.reduction(y)
+        if self.rank > self.v_all.shape[0]:
+            raise ValueError("Rank is greater than the number of modes.")
+        self.v = self.v_all[: self.rank]
+        y = self.coeffs[:, : self.rank]
 
         if self.with_scalar:
             self.coeffs_scalar = MinMaxScaler()
@@ -63,9 +66,12 @@ class PODRidge(PODImodelAbstract):
         self.with_scalar = with_scalar
 
     def fit(self, x, y):
-        v = svd(y, full_matrices=False)[2]
-        self.v = v[: self.rank]
-        y = y @ self.v.T
+        if not hasattr(self, 'v_all'):
+            self.reduction(y)
+        if self.rank > self.v_all.shape[0]:
+            raise ValueError("Rank is greater than the number of modes.")
+        self.v = self.v_all[: self.rank]
+        y = self.coeffs[:, : self.rank]    
 
         if self.with_scalar:
             self.coeffs_scalar = MinMaxScaler()
@@ -107,9 +113,12 @@ class PODGPR(PODImodelAbstract):
         self.with_scalar = with_scalar
 
     def fit(self, x, y):
-        v = svd(y, full_matrices=False)[2]
-        self.v = v[: self.rank]
-        y = y @ self.v.T
+        if not hasattr(self, 'v_all'):
+            self.reduction(y)
+        if self.rank > self.v_all.shape[0]:
+            raise ValueError("Rank is greater than the number of modes.")
+        self.v = self.v_all[: self.rank]
+        y = self.coeffs[:, : self.rank]
 
         if self.with_scalar:
             self.coeffs_scalar = MinMaxScaler()
@@ -154,9 +163,12 @@ class PODRidgeGPR(PODImodelAbstract):
         self.with_scalar = with_scalar
 
     def fit(self, x, y):
-        v = svd(y, full_matrices=False)[2]
-        self.v = v[: self.rank]
-        y = y @ self.v.T
+        if not hasattr(self, 'v_all'):
+            self.reduction(y)
+        if self.rank > self.v_all.shape[0]:
+            raise ValueError("Rank is greater than the number of modes.")
+        self.v = self.v_all[: self.rank]
+        y = self.coeffs[:, : self.rank]
 
         if self.with_scalar:
             self.coeffs_scalar = MinMaxScaler()
@@ -198,9 +210,12 @@ class PODRBF(PODImodelAbstract):
         self.with_scalar = with_scalar
 
     def fit(self, x, y):
-        v = svd(y, full_matrices=False)[2]
-        self.v = v[: self.rank]
-        y = y @ self.v.T
+        if not hasattr(self, 'v_all'):
+            self.reduction(y)
+        if self.rank > self.v_all.shape[0]:
+            raise ValueError("Rank is greater than the number of modes.")
+        self.v = self.v_all[: self.rank]
+        y = self.coeffs[:, : self.rank]
 
         if self.with_scalar:
             self.coeffs_scalar = MinMaxScaler()
@@ -242,14 +257,13 @@ class PODRidgeRBF(PODImodelAbstract):
         self.rank = rank
         self.with_scalar = with_scalar
 
-    def reduction(self, y):
-        u, s, self.modes_all = svd(y, full_matrices=False)
-        self.coeffs = u @ np.diag(s)
-        return self.modes_all[: self.rank]
-
     def fit(self, x, y):
-        self.v = self.reduction(y)
-        y = y @ self.v.T
+        if not hasattr(self, 'v_all'):
+            self.reduction(y)
+        if self.rank > self.v_all.shape[0]:
+            raise ValueError("Rank is greater than the number of modes.")
+        self.v = self.v_all[: self.rank]
+        y = self.coeffs[:, : self.rank]
 
         if self.with_scalar:
             self.coeffs_scalar = MinMaxScaler()

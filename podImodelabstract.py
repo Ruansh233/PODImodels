@@ -30,12 +30,11 @@ class PODImodelAbstract(ABC):
             err = []
             y_pred = self.predict(x)
             for i in range(len(x)):
-                err.append(np.linalg.norm(y[i] - y_pred[i]) / 
-                                          np.linalg.norm(y[i]))
+                err.append(np.linalg.norm(y[i] - y_pred[i]) / np.linalg.norm(y[i]))
             return np.array(err)
         else:
             return np.linalg.norm(y - self.predict(x)) / np.linalg.norm(y)
-    
+
     def inf_norm(self, x, y, separate_err=False):
         if separate_err:
             err = []
@@ -45,7 +44,21 @@ class PODImodelAbstract(ABC):
             return np.array(err)
         else:
             return np.linalg.norm(y - self.predict(x), ord=np.inf)
-    
+        
+    def performPOD(self, y):
+        """
+        Perform Proper Orthogonal Decomposition (POD) on the training data.
+        This method is called in the `fit` method of the derived classes.
+        """
+        # perform POD reduction if not already done
+        if not hasattr(self, "v_all"):
+            self.reduction(y)
+            print("POD reduction completed.")
+        if self.rank > self.v_all.shape[0]:
+            raise ValueError("Rank is greater than the number of modes.")
+        self.v = self.v_all[: self.rank]
+        return self.coeffs[:, : self.rank]
+
     def validate(self, x, y, training_ratio=0.8, rand_seed=42, norm="Frobenius"):
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=training_ratio, random_state=rand_seed
@@ -84,8 +97,9 @@ class PODImodelAbstract(ABC):
             is2D=is2D,
         )
 
-    def fixed_validate(self, x_train, y_train, x_test, y_test, norm="Frobenius",
-                       separate_err=False):
+    def fixed_validate(
+        self, x_train, y_train, x_test, y_test, norm="Frobenius", separate_err=False
+    ):
         self.fit(x_train, y_train)
 
         if norm == "Frobenius":
@@ -100,7 +114,9 @@ class PODImodelAbstract(ABC):
         u, s, self.v_all = svd(y, full_matrices=False)
         self.coeffs = u @ np.diag(s)
 
-    def multi_validate(self, x, y, ranks, training_ratio=0.8, rand_seed=42, norm="Frobenius"):
+    def multi_validate(
+        self, x, y, ranks, training_ratio=0.8, rand_seed=42, norm="Frobenius"
+    ):
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=training_ratio, random_state=rand_seed
         )
@@ -117,8 +133,16 @@ class PODImodelAbstract(ABC):
                 assert False
         return np.array(self.errors)
 
-    def multi_validate_fixed(self, x_train, y_train, x_test, y_test, ranks,
-                             norm="Frobenius", separate_err=False):
+    def multi_validate_fixed(
+        self,
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        ranks,
+        norm="Frobenius",
+        separate_err=False,
+    ):
         self.errors = []
         for i in ranks:
             self.rank = i

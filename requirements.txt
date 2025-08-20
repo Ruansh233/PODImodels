@@ -1,8 +1,0 @@
-setuptools
-wheel
-twine
-numpy
-bumpversion
-scikit-learn
-scipy
-pyvista

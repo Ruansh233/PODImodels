@@ -18,14 +18,26 @@ class PODImodelAbstract(ABC):
     """
 
     @abstractmethod
-    def fit(self, x, y):
+    def fit(self, x: np.ndarray, y: np.ndarray):
         """Abstract `fit`"""
 
     @abstractmethod
-    def predict(self, new_x):
+    def predict(self, new_x: np.ndarray) -> np.ndarray:
         """Abstract `predict`"""
 
-    def frobenius_norm(self, x, y, separate_err=False):
+    def frobenius_norm(
+        self, x: np.ndarray, y: np.ndarray, separate_err=False
+    ) -> np.ndarray:
+        """        Calculate the Frobenius norm of the difference between true and predicted values.
+        If `separate_err` is True, return the error for each sample separately.
+        Otherwise, return the overall error.
+        Args:
+            x (np.ndarray): Input features.
+            y (np.ndarray): True target values.
+            separate_err (bool): If True, return the error for each sample separately.
+        Returns:
+            np.ndarray: The Frobenius norm of the prediction error.
+        """
         if separate_err:
             err = []
             y_pred = self.predict(x)
@@ -35,7 +47,7 @@ class PODImodelAbstract(ABC):
         else:
             return np.linalg.norm(y - self.predict(x)) / np.linalg.norm(y)
 
-    def inf_norm(self, x, y, separate_err=False):
+    def inf_norm(self, x: np.ndarray, y: np.ndarray, separate_err=False) -> np.ndarray:
         if separate_err:
             err = []
             y_pred = self.predict(x)
@@ -44,11 +56,17 @@ class PODImodelAbstract(ABC):
             return np.array(err)
         else:
             return np.linalg.norm(y - self.predict(x), ord=np.inf)
-        
-    def performPOD(self, y):
+
+    def performPOD(self, y: np.ndarray) -> np.ndarray:
         """
         Perform Proper Orthogonal Decomposition (POD) on the training data.
         This method is called in the `fit` method of the derived classes.
+        Args:
+            y (np.ndarray): The training data for which POD is to be performed.
+        Returns:
+            np.ndarray: The coefficients of the POD modes.
+        Raises:
+            ValueError: If the rank is greater than the number of modes.
         """
         # perform POD reduction if not already done
         if not hasattr(self, "v_all"):
@@ -59,7 +77,25 @@ class PODImodelAbstract(ABC):
         self.v = self.v_all[: self.rank]
         return self.coeffs[:, : self.rank]
 
-    def validate(self, x, y, training_ratio=0.8, rand_seed=42, norm="Frobenius"):
+    def validate(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        training_ratio: float = 0.8,
+        rand_seed: int = 42,
+        norm: str = "Frobenius",
+    ):
+        """
+        Validate the model using a train-test split.
+        Args:
+            x (np.ndarray): Input features.
+            y (np.ndarray): Target values.
+            training_ratio (float): Ratio of the training set.
+            rand_seed (int): Random seed for reproducibility.
+            norm (str): Type of norm to use for validation ('Frobenius' or 'inf').
+        Returns:
+            float: The calculated norm of the prediction error.
+        """
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=training_ratio, random_state=rand_seed
         )
@@ -73,7 +109,25 @@ class PODImodelAbstract(ABC):
             print("Please enter variable norm with value 'Frobenius' or 'inf'")
             assert False
 
-    def reconstruct(self, x, y, refVTMName, saveFileName, dataType, is2D=False):
+    def reconstruct(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        refVTMName: str,
+        saveFileName: str,
+        dataType: str,
+        is2D: bool = False,
+    ):
+        """
+        Reconstruct the model and write the results into a VTK file.
+        Args:
+            x (np.ndarray): Input features.
+            y (np.ndarray): Target values.
+            refVTMName (str): Name of the reference VTM file.
+            saveFileName (str): Name of the file to save the results.
+            dataType (str): Type of data to be written.
+            is2D (bool): Whether the data is 2D or not.
+        """
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=0.8, random_state=42
         )
@@ -98,8 +152,26 @@ class PODImodelAbstract(ABC):
         )
 
     def fixed_validate(
-        self, x_train, y_train, x_test, y_test, norm="Frobenius", separate_err=False
+        self,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+        norm: str = "Frobenius",
+        separate_err: bool = False,
     ):
+        """
+        Validate the model with fixed training and testing data.
+        Args:
+            x_train (np.ndarray): Training input features.
+            y_train (np.ndarray): Training target values.
+            x_test (np.ndarray): Testing input features.
+            y_test (np.ndarray): Testing target values. 
+            norm (str): Type of norm to use for validation ('Frobenius' or 'inf').
+            separate_err (bool): If True, return the error for each sample separately.
+        Returns:
+            float: The calculated norm of the prediction error.
+        """
         self.fit(x_train, y_train)
 
         if norm == "Frobenius":
@@ -111,12 +183,38 @@ class PODImodelAbstract(ABC):
             assert False
 
     def reduction(self, y):
+        """
+        Perform Proper Orthogonal Decomposition (POD) on the training data.
+        This method is called in the `fit` method of the derived classes.
+        Args:
+            y (np.ndarray): The training data for which POD is to be performed.
+        Returns:
+            np.ndarray: The coefficients of the POD modes.
+        """
         u, s, self.v_all = svd(y, full_matrices=False)
         self.coeffs = u @ np.diag(s)
 
     def multi_validate(
-        self, x, y, ranks, training_ratio=0.8, rand_seed=42, norm="Frobenius"
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        ranks: list,
+        training_ratio: float = 0.8,
+        rand_seed: int = 42,
+        norm: str = "Frobenius",
     ):
+        """
+        Validate the model with multiple ranks.
+        Args:
+            x (np.ndarray): Input features.
+            y (np.ndarray): Target values.
+            ranks (list): List of ranks to validate.
+            training_ratio (float): Ratio of the training set.
+            rand_seed (int): Random seed for reproducibility.
+            norm (str): Type of norm to use for validation ('Frobenius' or 'inf').
+        Returns:
+            np.ndarray: Array of errors for each rank.
+        """
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=training_ratio, random_state=rand_seed
         )
@@ -135,14 +233,27 @@ class PODImodelAbstract(ABC):
 
     def multi_validate_fixed(
         self,
-        x_train,
-        y_train,
-        x_test,
-        y_test,
-        ranks,
-        norm="Frobenius",
-        separate_err=False,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+        ranks: list,
+        norm: str = "Frobenius",
+        separate_err: bool = False,
     ):
+        """
+        Validate the model with multiple ranks using fixed training and testing data.
+        Args:
+            x_train (np.ndarray): Training input features.
+            y_train (np.ndarray): Training target values.
+            x_test (np.ndarray): Testing input features.
+            y_test (np.ndarray): Testing target values.
+            ranks (list): List of ranks to validate.
+            norm (str): Type of norm to use for validation ('Frobenius' or 'inf').
+            separate_err (bool): If True, return the error for each sample separately.
+        Returns:
+            np.ndarray: Array of errors for each rank.
+        """
         self.errors = []
         for i in ranks:
             self.rank = i

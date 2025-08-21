@@ -1,6 +1,8 @@
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
+from typing import Optional
+from sklearn.gaussian_process.kernels import Kernel
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import LinearRegression
 from scipy.linalg import svd
@@ -15,6 +17,8 @@ import random
 
 
 class fieldsLinear(PODImodelAbstract):
+    """A simple linear regression model for fields."""
+
     def __init__(self):
         self.lin = LinearRegression()
 
@@ -26,7 +30,16 @@ class fieldsLinear(PODImodelAbstract):
 
 
 class PODLinear(PODImodelAbstract):
-    def __init__(self, rank=10, with_scalar=False):
+    """A linear regression model for POD coefficients."""
+
+    def __init__(self, rank: int = 10, with_scalar: bool = False):
+        """
+        Initialize the PODLinear model.
+
+        Args:
+            rank (int): The rank for POD.
+            with_scalar (bool): Whether to include a scalar in the model.
+        """
         self.lin = LinearRegression()
         self.rank = rank
         self.with_scalar = with_scalar
@@ -48,6 +61,7 @@ class PODLinear(PODImodelAbstract):
 
 
 class fieldsRidge(PODImodelAbstract):
+    """A Ridge regression model for fields."""
     def __init__(self):
         self.lin = Ridge()
 
@@ -59,7 +73,15 @@ class fieldsRidge(PODImodelAbstract):
 
 
 class PODRidge(PODImodelAbstract):
-    def __init__(self, rank=10, with_scalar=False):
+    """A Ridge regression model for POD coefficients."""
+    def __init__(self, rank: int = 10, with_scalar: bool = False):
+        """
+        Initialize the PODRidge model.
+
+        Args:
+            rank (int): The rank for POD.
+            with_scalar (bool): Whether to include a scalar in the model.
+        """
         self.lin = Ridge()
         self.rank = rank
         self.with_scalar = with_scalar
@@ -81,7 +103,15 @@ class PODRidge(PODImodelAbstract):
 
 
 class fieldsGPR(PODImodelAbstract):
-    def __init__(self, kernel=None, alpha=1.0e-10):
+    """A Gaussian Process Regression model for fields."""
+    def __init__(self, kernel: Optional[Kernel] = None, alpha: float = 1.0e-10):
+        """
+        Initialize the fieldsGPR model.
+
+        Args:
+            kernel (Optional[Kernel]): The kernel to use for the GPR.
+            alpha (float): The noise level for the GPR.
+        """
         if kernel is None:
             self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
@@ -98,7 +128,13 @@ class fieldsGPR(PODImodelAbstract):
 
 
 class PODGPR(PODImodelAbstract):
-    def __init__(self, kernel=None, alpha=1.0e-10, rank=10, with_scalar=False):
+    def __init__(
+        self,
+        kernel: Optional[Kernel] = None,
+        alpha: float = 1.0e-10,
+        rank: int = 10,
+        with_scalar: bool = False,
+    ):
         if kernel is None:
             self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
@@ -125,7 +161,7 @@ class PODGPR(PODImodelAbstract):
 
 
 class fieldsRidgeGPR(PODImodelAbstract):
-    def __init__(self, kernel=None, alpha=1.0e-10):
+    def __init__(self, kernel: Optional[Kernel] = None, alpha: float = 1.0e-10):
         if kernel is None:
             self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
@@ -145,7 +181,13 @@ class fieldsRidgeGPR(PODImodelAbstract):
 
 
 class PODRidgeGPR(PODImodelAbstract):
-    def __init__(self, kernel=None, alpha=1.0e-10, rank=10, with_scalar=False):
+    def __init__(
+        self,
+        kernel: Optional[Kernel] = None,
+        alpha: float = 1.0e-10,
+        rank: int = 10,
+        with_scalar: bool = False,
+    ):
         if kernel is None:
             self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
@@ -155,7 +197,7 @@ class PODRidgeGPR(PODImodelAbstract):
         self.with_scalar = with_scalar
 
     def fit(self, x, y):
-        y = self.performPOD(y)                
+        y = self.performPOD(y)
         self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
         self.lin = Ridge()
 
@@ -177,7 +219,7 @@ class PODRidgeGPR(PODImodelAbstract):
 
 
 class fieldsRBF(PODImodelAbstract):
-    def __init__(self, kernel="linear", epsilon=1.0):
+    def __init__(self, kernel: str = "linear", epsilon: float = 1.0):
         self.kernel = kernel
         self.epsilon = epsilon
 
@@ -190,7 +232,12 @@ class fieldsRBF(PODImodelAbstract):
 
 class PODRBF(PODImodelAbstract):
     def __init__(
-        self, kernel="linear", epsilon=1.0, rank=10, with_scalar=False, neighbors=None
+        self,
+        kernel: str = "linear",
+        epsilon: float = 1.0,
+        rank: int = 10,
+        with_scalar: bool = False,
+        neighbors: Optional[int] = None,
     ):
         self.kernel = kernel
         self.epsilon = epsilon
@@ -218,7 +265,7 @@ class PODRBF(PODImodelAbstract):
 
 
 class fieldsRidgeRBF(PODImodelAbstract):
-    def __init__(self, kernel="linear", epsilon=1.0):
+    def __init__(self, kernel: str = "linear", epsilon: float = 1.0):
         self.kernel = kernel
         self.epsilon = epsilon
         self.lin = Ridge()
@@ -234,7 +281,13 @@ class fieldsRidgeRBF(PODImodelAbstract):
 
 
 class PODRidgeRBF(PODImodelAbstract):
-    def __init__(self, kernel="linear", epsilon=1.0, rank=10, with_scalar=False):
+    def __init__(
+        self,
+        kernel: str = "linear",
+        epsilon: float = 1.0,
+        rank: int = 10,
+        with_scalar: bool = False,
+    ):
         self.kernel = kernel
         self.epsilon = epsilon
         self.lin = Ridge()
@@ -275,7 +328,7 @@ class PODANN(PODImodelAbstract):
 
     def __init__(
         self,
-        rank=10,
+        rank: int = 10,
         hidden_layer_sizes: list = None,
         activation_function_name: str = "relu",
         learning_rate: float = 0.001,
@@ -283,7 +336,7 @@ class PODANN(PODImodelAbstract):
         optimizer_name: str = "adam",
         num_epochs: int = 1000,
         stop_threshold: float = 1e-4,
-        random_seed: int = 42
+        random_seed: int = 42,
     ):
         """
         Initializes the PODANN.
@@ -323,6 +376,11 @@ class PODANN(PODImodelAbstract):
         # Determine the device to use (GPU if available, otherwise CPU)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
+        # --- Added: Print current PyTorch CPU thread count ---
+        print(
+            f"PyTorch is configured to use {torch.get_num_threads()} CPU threads for this process."
+        )
+        # ---------------------------------------------------
 
         # Initialize model and scalers to None, they will be set during fit
         self.model = None
@@ -394,12 +452,12 @@ class PODANN(PODImodelAbstract):
         Args:
             seed (int): The seed value to use.
         """
-        np.random.seed(seed)        # NumPy seed
-        random.seed(seed)           # Python's built-in random module seed
-        torch.manual_seed(seed)     # PyTorch CPU seed
+        np.random.seed(seed)  # NumPy seed
+        random.seed(seed)  # Python's built-in random module seed
+        torch.manual_seed(seed)  # PyTorch CPU seed
         if torch.cuda.is_available():
-            torch.cuda.manual_seed(seed)          # PyTorch GPU seed
-            torch.cuda.manual_seed_all(seed)      # PyTorch Multi-GPU seed
+            torch.cuda.manual_seed(seed)  # PyTorch GPU seed
+            torch.cuda.manual_seed_all(seed)  # PyTorch Multi-GPU seed
             # Optional: For deterministic CUDA operations, but can slow down training
             # If you encounter issues, you might need to comment these out.
             torch.backends.cudnn.deterministic = True

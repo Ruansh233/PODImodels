@@ -74,8 +74,21 @@ class PODImodelAbstract(ABC):
             print("POD reduction completed.")
         if self.rank > self.v_all.shape[0]:
             raise ValueError("Rank is greater than the number of modes.")
+        self.s = self.s_all[: self.rank]
         self.v = self.v_all[: self.rank]
         return self.coeffs[:, : self.rank]
+
+    def reduction(self, y):
+        """
+        Perform Proper Orthogonal Decomposition (POD) on the training data.
+        This method is called in the `fit` method of the derived classes.
+        Args:
+            y (np.ndarray): The training data for which POD is to be performed.
+        Returns:
+            np.ndarray: The coefficients of the POD modes.
+        """
+        u, self.s_all, self.v_all = svd(y, full_matrices=False)
+        self.coeffs = u @ np.diag(self.s_all)
 
     def validate(
         self,
@@ -181,18 +194,6 @@ class PODImodelAbstract(ABC):
         else:
             print("Please enter variable norm with value 'Frobenius' or 'inf'")
             assert False
-
-    def reduction(self, y):
-        """
-        Perform Proper Orthogonal Decomposition (POD) on the training data.
-        This method is called in the `fit` method of the derived classes.
-        Args:
-            y (np.ndarray): The training data for which POD is to be performed.
-        Returns:
-            np.ndarray: The coefficients of the POD modes.
-        """
-        u, s, self.v_all = svd(y, full_matrices=False)
-        self.coeffs = u @ np.diag(s)
 
     def multi_validate(
         self,

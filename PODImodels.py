@@ -262,7 +262,7 @@ class PODGPR(PODImodelAbstract):
             return self.scalar_Y.inverse_transform(self.gpr.predict(x)) @ self.v
         else:
             return self.gpr.predict(x) @ self.v
-        
+
 
 class PODGPR2(PODImodelAbstract):
     def __init__(
@@ -520,7 +520,7 @@ class PODRBF(PODImodelAbstract):
             return tmp @ self.v
         else:
             return self.rbf(x) @ self.v
-        
+
 
 class PODRBF2(PODImodelAbstract):
     def __init__(
@@ -564,7 +564,11 @@ class PODRBF2(PODImodelAbstract):
         self.rbfs = []
         for i in range(self.rank):
             rbf = RBFInterpolator(
-                x, y[:, i], kernel=self.kernel, epsilon=self.epsilon, neighbors=self.neighbors
+                x,
+                y[:, i],
+                kernel=self.kernel,
+                epsilon=self.epsilon,
+                neighbors=self.neighbors,
             )
             self.rbfs.append(rbf)
 
@@ -713,6 +717,7 @@ class PODANN(PODImodelAbstract):
         num_epochs: int = 1000,
         stop_threshold: float = 1e-4,
         random_seed: int = 42,
+        with_weight: bool = True,
     ):
         """
         Initializes the PODANN.
@@ -740,6 +745,8 @@ class PODANN(PODImodelAbstract):
             stop_threshold (float): Threshold for early stopping based on loss value.
                                    Defaults to 1e-6.
             random_seed (int): Random seed for reproducibility. Defaults to 42.
+            with_weight (bool): Whether to use weights in the loss function.
+                                Defaults to True.
         """
         self.rank = rank
         self.with_scalar_x = with_scalar_x
@@ -755,6 +762,7 @@ class PODANN(PODImodelAbstract):
         self.num_epochs = num_epochs
         self.stop_threshold = stop_threshold
         self.random_seed = random_seed
+        self.with_weight = with_weight
 
         # Determine the device to use (GPU if available, otherwise CPU)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -805,7 +813,10 @@ class PODANN(PODImodelAbstract):
     def _get_loss_function(self):
         """Returns the PyTorch loss function module based on its name."""
         if self.loss_function_name == "mse":
-            return nn.MSELoss()
+            if self.with_weight:
+                return nn.MSELoss(reduction="none")
+            else:
+                return nn.MSELoss()
         elif self.loss_function_name == "l1":
             return nn.L1Loss()
         else:
@@ -906,6 +917,21 @@ class PODANN(PODImodelAbstract):
         criterion = self._get_loss_function()
         optimizer = self._get_optimizer(self.model.parameters())
 
+        # Compute loss
+        if self.with_weight:
+            # set coefficient_weights for weighted loss as the singular values from POD
+            self.coefficient_weights = self.s
+            if len(self.coefficient_weights) != output_dim:
+                raise ValueError(
+                    f"Length of coefficient_weights ({len(self.coefficient_weights)}) must match output_dim ({output_dim})."
+                )
+            weights_tensor = torch.tensor(
+                self.coefficient_weights, dtype=torch.float32
+            ).to(self.device)
+            # Ensure weights are positive
+            if (weights_tensor < 0).any():
+                raise ValueError("Coefficient weights must be non-negative.")
+
         # 4. Training loop
         print("Starting model training...")
         for epoch in range(self.num_epochs):
@@ -914,7 +940,27 @@ class PODANN(PODImodelAbstract):
 
             # Forward pass
             outputs = self.model(X_train_tensor)
-            loss = criterion(outputs, y_train_tensor)
+
+            # Ensure weighting is only applied if loss is MSE
+            if self.with_weight:
+                if self.loss_function_name == "mse":
+                    # Calculate squared error for each element
+                    loss_per_element = criterion(
+                        outputs, y_train_tensor
+                    )  # Use targets from batch (unscaled)
+                    # Apply weights
+                    weighted_loss_per_element = loss_per_element * weights_tensor
+                    # Take the mean of the weighted squared error over all elements
+                    loss = weighted_loss_per_element.mean()
+                else:
+                    # Fallback for other loss functions if implemented without specific weighting logic
+                    print(
+                        "Warning: Coefficient weights are set but loss function is not MSE. Using unweighted loss."
+                    )
+                    loss = criterion(outputs, y_train_tensor)
+            else:
+                # Calculate loss without weights
+                loss = criterion(outputs, y_train_tensor)
 
             # Backward and optimize
             optimizer.zero_grad()  # Clear gradients

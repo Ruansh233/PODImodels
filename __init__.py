@@ -10,7 +10,8 @@ __all__ = [
     "PODRBF",
     "fieldsRidgeRBF",
     "PODRidgeRBF",
-    "scaledROM"
+    "scaledROM",
+    "PODANN"
 ]
 
 from podImodelabstract import PODImodelAbstract

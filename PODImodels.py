@@ -195,8 +195,6 @@ class fieldsGPR(PODImodelAbstract):
         self.with_scalar_y = with_scalar_y
 
     def fit(self, x, y):
-        self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
-
         if self.with_scalar_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
@@ -204,6 +202,7 @@ class fieldsGPR(PODImodelAbstract):
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
+        self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
         self.gpr.fit(x, y)
 
     def predict(self, x):
@@ -245,7 +244,6 @@ class PODGPR(PODImodelAbstract):
 
     def fit(self, x, y):
         y = self.performPOD(y)
-        self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
 
         if self.with_scalar_x:
             self.scalar_X = MinMaxScaler()
@@ -254,6 +252,7 @@ class PODGPR(PODImodelAbstract):
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
+        self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
         self.gpr.fit(x, y)
 
     def predict(self, x):
@@ -263,6 +262,61 @@ class PODGPR(PODImodelAbstract):
             return self.scalar_Y.inverse_transform(self.gpr.predict(x)) @ self.v
         else:
             return self.gpr.predict(x) @ self.v
+        
+
+class PODGPR2(PODImodelAbstract):
+    def __init__(
+        self,
+        kernel: Optional[Kernel] = None,
+        alpha: float = 1.0e-10,
+        rank: int = 10,
+        with_scalar_x: bool = True,
+        with_scalar_y: bool = True,
+    ):
+        """
+        Initialize the PODGPR model.
+
+        Args:
+            kernel (Optional[Kernel]): The kernel to use for the GPR.
+            alpha (float): The noise level for the GPR.
+            rank (int): The rank for POD.
+            with_scalar_x (bool): Whether to include a scalar for input features.
+            with_scalar_y (bool): Whether to include a scalar for output features.
+        """
+        if kernel is None:
+            self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
+        else:
+            self.kernel = kernel
+        self.alpha = alpha
+        self.rank = rank
+        self.with_scalar_x = with_scalar_x
+        self.with_scalar_y = with_scalar_y
+
+    def fit(self, x, y):
+        y = self.performPOD(y)
+
+        if self.with_scalar_x:
+            self.scalar_X = MinMaxScaler()
+            x = self.scalar_X.fit_transform(x)
+        if self.with_scalar_y:
+            self.scalar_Y = MinMaxScaler()
+            y = self.scalar_Y.fit_transform(y)
+
+        # create separate GPR for each POD coefficient
+        self.gprs = []
+        for i in range(self.rank):
+            gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
+            gpr.fit(x, y[:, i])
+            self.gprs.append(gpr)
+
+    def predict(self, x):
+        if self.with_scalar_x:
+            x = self.scalar_X.transform(x)
+        preds = np.array([gpr.predict(x) for gpr in self.gprs]).T
+        if self.with_scalar_y:
+            return self.scalar_Y.inverse_transform(preds) @ self.v
+        else:
+            return preds @ self.v
 
 
 class fieldsRidgeGPR(PODImodelAbstract):
@@ -466,6 +520,62 @@ class PODRBF(PODImodelAbstract):
             return tmp @ self.v
         else:
             return self.rbf(x) @ self.v
+        
+
+class PODRBF2(PODImodelAbstract):
+    def __init__(
+        self,
+        kernel: str = "linear",
+        epsilon: float = 1.0,
+        rank: int = 10,
+        with_scalar_x: bool = True,
+        with_scalar_y: bool = True,
+        neighbors: int = None,
+    ):
+        """
+        Initialize the PODRBF model.
+
+        Args:
+            kernel (str): The kernel to use for the RBF interpolator.
+            epsilon (float): The epsilon parameter for the RBF interpolator.
+            rank (int): The rank for POD.
+            with_scalar_x (bool): Whether to include a scalar for input features.
+            with_scalar_y (bool): Whether to include a scalar for output features.
+            neighbors (int): The number of neighbors for the RBF interpolator.
+        """
+        self.kernel = kernel
+        self.epsilon = epsilon
+        self.rank = rank
+        self.with_scalar_x = with_scalar_x
+        self.with_scalar_y = with_scalar_y
+        self.neighbors = neighbors
+
+    def fit(self, x, y):
+        y = self.performPOD(y)
+
+        if self.with_scalar_x:
+            self.scalar_X = MinMaxScaler()
+            x = self.scalar_X.fit_transform(x)
+        if self.with_scalar_y:
+            self.scalar_Y = MinMaxScaler()
+            y = self.scalar_Y.fit_transform(y)
+
+        # create separate RBFInterpolator for each POD coefficient
+        self.rbfs = []
+        for i in range(self.rank):
+            rbf = RBFInterpolator(
+                x, y[:, i], kernel=self.kernel, epsilon=self.epsilon, neighbors=self.neighbors
+            )
+            self.rbfs.append(rbf)
+
+    def predict(self, x):
+        if self.with_scalar_x:
+            x = self.scalar_X.transform(x)
+        pod_coeffs = np.array([rbf(x) for rbf in self.rbfs]).T
+        if self.with_scalar_y:
+            return self.scalar_Y.inverse_transform(pod_coeffs) @ self.v
+        else:
+            return pod_coeffs @ self.v
 
 
 class fieldsRidgeRBF(PODImodelAbstract):

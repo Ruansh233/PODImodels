@@ -767,11 +767,10 @@ class PODANN(PODImodelAbstract):
         # Determine the device to use (GPU if available, otherwise CPU)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
-        # --- Added: Print current PyTorch CPU thread count ---
-        print(
-            f"PyTorch is configured to use {torch.get_num_threads()} CPU threads for this process."
-        )
-        # ---------------------------------------------------
+        if self.device.type == "cuda":
+            print(f"GPU Info: {torch.cuda.get_device_name(0)}")
+        else:
+            print(f"CPU Info: {torch.get_num_threads()} threads")
 
         # Initialize model and scalers to None, they will be set during fit
         self.model = None

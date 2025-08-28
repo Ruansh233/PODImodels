@@ -19,16 +19,13 @@ import random
 class fieldsLinear(PODImodelAbstract):
     """A simple linear regression model for fields."""
 
-    def __init__(self, with_scalar_x: bool = True, with_scalar_y: bool = True):
+    def __init__(self, **kwargs):
         """
         Initialize the fieldsLinear model.
-        Args:
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
         """
+        super().__init__(**kwargs)
+
         self.lin = LinearRegression()
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
 
     def fit(self, x, y):
         if self.with_scalar_x:
@@ -52,22 +49,13 @@ class fieldsLinear(PODImodelAbstract):
 class PODLinear(PODImodelAbstract):
     """A linear regression model for POD coefficients."""
 
-    def __init__(
-        self, rank: int = 10, with_scalar_x: bool = True, with_scalar_y: bool = True
-    ):
+    def __init__(self, **kwargs):
         """
         Initialize the PODLinear model.
-
-        Args:
-            rank (int): The rank for POD.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
         """
-        self.lin = LinearRegression()
-        self.rank = rank
+        super().__init__(**kwargs)
 
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
+        self.lin = LinearRegression()
 
     def fit(self, x, y):
         y = self.performPOD(y)
@@ -94,17 +82,13 @@ class PODLinear(PODImodelAbstract):
 class fieldsRidge(PODImodelAbstract):
     """A Ridge regression model for fields."""
 
-    def __init__(self, with_scalar_x: bool = True, with_scalar_y: bool = True):
+    def __init__(self, **kwargs):
         """
         Initialize the fieldsRidge model.
-
-        Args:
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
         """
+        super().__init__(**kwargs)
+
         self.lin = Ridge()
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
 
     def fit(self, x, y):
         if self.with_scalar_x:
@@ -128,21 +112,13 @@ class fieldsRidge(PODImodelAbstract):
 class PODRidge(PODImodelAbstract):
     """A Ridge regression model for POD coefficients."""
 
-    def __init__(
-        self, rank: int = 10, with_scalar_x: bool = True, with_scalar_y: bool = True
-    ):
+    def __init__(self, **kwargs):
         """
         Initialize the PODRidge model.
-
-        Args:
-            rank (int): The rank for POD.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
         """
+        super().__init__(**kwargs)
+
         self.lin = Ridge()
-        self.rank = rank
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
 
     def fit(self, x, y):
         y = self.performPOD(y)
@@ -169,11 +145,7 @@ class fieldsGPR(PODImodelAbstract):
     """A Gaussian Process Regression model for fields."""
 
     def __init__(
-        self,
-        kernel: Optional[Kernel] = None,
-        alpha: float = 1.0e-10,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
+        self, kernel: Optional[Kernel] = None, alpha: float = 1.0e-10, **kwargs
     ):
         """
         Initialize the fieldsGPR model.
@@ -181,18 +153,15 @@ class fieldsGPR(PODImodelAbstract):
         Args:
             kernel (Optional[Kernel]): The kernel to use for the GPR.
             alpha (float): The noise level for the GPR.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
         """
+        super().__init__(**kwargs)
+
         if kernel is None:
             self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
             self.kernel = kernel
 
         self.alpha = alpha
-
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
 
     def fit(self, x, y):
         if self.with_scalar_x:
@@ -219,9 +188,7 @@ class PODGPR(PODImodelAbstract):
         self,
         kernel: Optional[Kernel] = None,
         alpha: float = 1.0e-10,
-        rank: int = 10,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
+        **kwargs
     ):
         """
         Initialize the PODGPR model.
@@ -229,18 +196,14 @@ class PODGPR(PODImodelAbstract):
         Args:
             kernel (Optional[Kernel]): The kernel to use for the GPR.
             alpha (float): The noise level for the GPR.
-            rank (int): The rank for POD.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
         """
+        super().__init__(**kwargs)
+
         if kernel is None:
             self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
             self.kernel = kernel
         self.alpha = alpha
-        self.rank = rank
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
 
     def fit(self, x, y):
         y = self.performPOD(y)
@@ -269,9 +232,7 @@ class PODGPR2(PODImodelAbstract):
         self,
         kernel: Optional[Kernel] = None,
         alpha: float = 1.0e-10,
-        rank: int = 10,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
+        **kwargs
     ):
         """
         Initialize the PODGPR model.
@@ -280,17 +241,14 @@ class PODGPR2(PODImodelAbstract):
             kernel (Optional[Kernel]): The kernel to use for the GPR.
             alpha (float): The noise level for the GPR.
             rank (int): The rank for POD.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
         """
+        super().__init__(**kwargs)
+
         if kernel is None:
             self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
             self.kernel = kernel
         self.alpha = alpha
-        self.rank = rank
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
 
     def fit(self, x, y):
         y = self.performPOD(y)
@@ -324,8 +282,7 @@ class fieldsRidgeGPR(PODImodelAbstract):
         self,
         kernel: Optional[Kernel] = None,
         alpha: float = 1.0e-10,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
+        **kwargs
     ):
         """
         Initialize the fieldsRidgeGPR model.
@@ -333,17 +290,15 @@ class fieldsRidgeGPR(PODImodelAbstract):
         Args:
             kernel (Optional[Kernel]): The kernel to use for the GPR.
             alpha (float): The noise level for the GPR.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
         """
+        super().__init__(**kwargs)
+
         if kernel is None:
             self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
             self.kernel = kernel
 
         self.alpha = alpha
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
 
     def fit(self, x, y):
         if self.with_scalar_x:
@@ -375,9 +330,7 @@ class PODRidgeGPR(PODImodelAbstract):
         self,
         kernel: Optional[Kernel] = None,
         alpha: float = 1.0e-10,
-        rank: int = 10,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
+        **kwargs
     ):
         """
         Initialize the PODRidgeGPR model.
@@ -385,18 +338,14 @@ class PODRidgeGPR(PODImodelAbstract):
         Args:
             kernel (Optional[Kernel]): The kernel to use for the GPR.
             alpha (float): The noise level for the GPR.
-            rank (int): The rank for POD.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
         """
+        super().__init__(**kwargs)
+
         if kernel is None:
             self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
             self.kernel = kernel
         self.alpha = alpha
-        self.rank = rank
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
 
     def fit(self, x, y):
         y = self.performPOD(y)
@@ -430,23 +379,20 @@ class fieldsRBF(PODImodelAbstract):
         self,
         kernel: str = "linear",
         epsilon: float = 1.0,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
         neighbors: int = None,
+        **kwargs
     ):
         """
         Initialize the fieldsRBF model.
         Args:
             kernel (str): The kernel to use for the RBF interpolator.
             epsilon (float): The epsilon parameter for the RBF interpolator.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
             neighbors (int): The number of neighbors for the RBF interpolator.
         """
+        super().__init__(**kwargs)
+
         self.kernel = kernel
         self.epsilon = epsilon
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
         self.neighbors = neighbors
 
     def fit(self, x, y):
@@ -475,10 +421,8 @@ class PODRBF(PODImodelAbstract):
         self,
         kernel: str = "linear",
         epsilon: float = 1.0,
-        rank: int = 10,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
         neighbors: int = None,
+        **kwargs,
     ):
         """
         Initialize the PODRBF model.
@@ -486,16 +430,12 @@ class PODRBF(PODImodelAbstract):
         Args:
             kernel (str): The kernel to use for the RBF interpolator.
             epsilon (float): The epsilon parameter for the RBF interpolator.
-            rank (int): The rank for POD.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
             neighbors (int): The number of neighbors for the RBF interpolator.
         """
+        super().__init__(**kwargs)
+
         self.kernel = kernel
         self.epsilon = epsilon
-        self.rank = rank
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
         self.neighbors = neighbors
 
     def fit(self, x, y):
@@ -527,10 +467,8 @@ class PODRBF2(PODImodelAbstract):
         self,
         kernel: str = "linear",
         epsilon: float = 1.0,
-        rank: int = 10,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
         neighbors: int = None,
+        **kwargs
     ):
         """
         Initialize the PODRBF model.
@@ -538,16 +476,12 @@ class PODRBF2(PODImodelAbstract):
         Args:
             kernel (str): The kernel to use for the RBF interpolator.
             epsilon (float): The epsilon parameter for the RBF interpolator.
-            rank (int): The rank for POD.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
             neighbors (int): The number of neighbors for the RBF interpolator.
         """
+        super().__init__(**kwargs)
+
         self.kernel = kernel
         self.epsilon = epsilon
-        self.rank = rank
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
         self.neighbors = neighbors
 
     def fit(self, x, y):
@@ -587,9 +521,8 @@ class fieldsRidgeRBF(PODImodelAbstract):
         self,
         kernel: str = "linear",
         epsilon: float = 1.0,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
         neighbors: int = None,
+        **kwargs
     ):
         """
         Initialize the fieldsRidgeRBF model.
@@ -597,15 +530,13 @@ class fieldsRidgeRBF(PODImodelAbstract):
         Args:
             kernel (str): The kernel to use for the RBF interpolator.
             epsilon (float): The epsilon parameter for the RBF interpolator.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
             neighbors (int): The number of neighbors for the RBF interpolator.
         """
+        super().__init__(**kwargs)
+
         self.kernel = kernel
         self.epsilon = epsilon
         self.lin = Ridge()
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
         self.neighbors = neighbors
 
     def fit(self, x, y):
@@ -640,10 +571,8 @@ class PODRidgeRBF(PODImodelAbstract):
         self,
         kernel: str = "linear",
         epsilon: float = 1.0,
-        rank: int = 10,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
         neighbors: int = None,
+        **kwargs
     ):
         """
         Initialize the PODRidgeRBF model.
@@ -651,17 +580,13 @@ class PODRidgeRBF(PODImodelAbstract):
         Args:
             kernel (str): The kernel to use for the RBF interpolator.
             epsilon (float): The epsilon parameter for the RBF interpolator.
-            rank (int): The rank for POD.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-            with_scalar_y (bool): Whether to include a scalar for output features.
             neighbors (int): The number of neighbors for the RBF interpolator.
         """
+        super().__init__(**kwargs)
+
         self.kernel = kernel
         self.epsilon = epsilon
         self.lin = Ridge()
-        self.rank = rank
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
         self.neighbors = neighbors
 
     def fit(self, x, y):
@@ -705,9 +630,6 @@ class PODANN(PODImodelAbstract):
 
     def __init__(
         self,
-        rank: int = 10,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
         hidden_layer_sizes: list = None,
         activation_function_name: str = "relu",
         activation_function: Optional[nn.Module] = None,
@@ -718,17 +640,12 @@ class PODANN(PODImodelAbstract):
         stop_threshold: float = 1e-4,
         random_seed: int = 42,
         with_weight: bool = True,
+        **kwargs
     ):
         """
         Initializes the PODANN.
 
         Args:
-            rank (int): The number of POD modes to use for the model.
-                        Defaults to 10.
-            with_scalar_x (bool): Whether to include a scalar for input features.
-                                   Defaults to True.
-            with_scalar_y (bool): Whether to include a scalar for output features.
-                                   Defaults to True.
             hidden_layer_sizes (list): A list where each element is the number
                                        of neurons in a corresponding hidden layer.
                                        Example: [32, 16] for two hidden layers
@@ -748,9 +665,8 @@ class PODANN(PODImodelAbstract):
             with_weight (bool): Whether to use weights in the loss function.
                                 Defaults to True.
         """
-        self.rank = rank
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
+        super().__init__(**kwargs)
+
         self.hidden_layer_sizes = (
             hidden_layer_sizes if hidden_layer_sizes is not None else [32, 16]
         )

@@ -18,6 +18,28 @@ class PODImodelAbstract(ABC):
     """
 
     @abstractmethod
+    def __init__(
+        self,
+        rank=10,
+        with_scalar_x: bool = True,
+        with_scalar_y: bool = True,
+        POD_algo: str = "eigen",
+    ):
+        """
+        Abstract `__init__` method.
+
+        Args:
+            rank (int): The rank for the POD modes.
+            with_scalar_x (bool): Whether to scale the input features.
+            with_scalar_y (bool): Whether to scale the target values.
+            POD (str): The method for POD ('svd' or 'eigen').
+        """
+        self.rank = rank
+        self.with_scalar_x = with_scalar_x
+        self.with_scalar_y = with_scalar_y
+        self.POD_algo = POD_algo
+
+    @abstractmethod
     def fit(self, x: np.ndarray, y: np.ndarray):
         """Abstract `fit`"""
 
@@ -28,7 +50,7 @@ class PODImodelAbstract(ABC):
     def frobenius_norm(
         self, x: np.ndarray, y: np.ndarray, separate_err=False
     ) -> np.ndarray:
-        """        Calculate the Frobenius norm of the difference between true and predicted values.
+        """Calculate the Frobenius norm of the difference between true and predicted values.
         If `separate_err` is True, return the error for each sample separately.
         Otherwise, return the overall error.
         Args:
@@ -68,10 +90,8 @@ class PODImodelAbstract(ABC):
         Raises:
             ValueError: If the rank is greater than the number of modes.
         """
-        # perform POD reduction if not already done
         if not hasattr(self, "v_all"):
             self.reduction(y)
-            print("POD reduction completed.")
         if self.rank > self.v_all.shape[0]:
             raise ValueError("Rank is greater than the number of modes.")
         self.s = self.s_all[: self.rank]
@@ -80,23 +100,40 @@ class PODImodelAbstract(ABC):
 
     def reduction(self, y):
         """
-        Perform Proper Orthogonal Decomposition (POD) on the training data.
+        Perform Proper Orthogonal Decomposition (POD) on the training data using
+        the specified method (SVD or eigenvalue decomposition).
         This method is called in the `fit` method of the derived classes.
         Args:
             y (np.ndarray): The training data for which POD is to be performed.
         Returns:
             np.ndarray: The coefficients of the POD modes.
-        """        
-        try:
+        """
+        if self.POD_algo == "svd":
             u, self.s_all, self.v_all = svd(y, full_matrices=False)
-        except Exception as e:
-            print(f"Error occurred during scipy.linalg.svd: {e}")
-            try:
-                u, self.s_all, self.v_all = np.linalg.svd(y, full_matrices=False)
-            except Exception as e:
-                print(f"Error occurred during numpy.linalg.svd: {e}")
-                return None
-        self.coeffs = u @ np.diag(self.s_all)
+            self.coeffs = u @ np.diag(self.s_all)
+            print(f"POD_SVD reduction completed.")
+        elif self.POD_algo == "eigen":
+            N, M = y.shape
+
+            C = y @ y.T
+            eigenvalues, U = np.linalg.eigh(C)
+
+            sorted_indices = np.argsort(eigenvalues)[::-1]
+            sorted_eigenvalues = eigenvalues[sorted_indices]
+            U = U[:, sorted_indices]
+
+            self.s_all = np.sqrt(sorted_eigenvalues)
+            self.coeffs = U @ np.diag(self.s_all)
+
+            self.v_all = np.zeros((N, M))
+            tolerance = 1e-10
+            for i in range(N):
+                if self.s_all[i] > tolerance:
+                    u_i = U[:, i]
+                    self.v_all[i, :] = (1 / self.s_all[i]) * (u_i.T @ y)
+            print("POD_eigen reduction completed.")
+        else:
+            raise ValueError("Invalid POD method.")
 
     def validate(
         self,
@@ -187,7 +224,7 @@ class PODImodelAbstract(ABC):
             x_train (np.ndarray): Training input features.
             y_train (np.ndarray): Training target values.
             x_test (np.ndarray): Testing input features.
-            y_test (np.ndarray): Testing target values. 
+            y_test (np.ndarray): Testing target values.
             norm (str): Type of norm to use for validation ('Frobenius' or 'inf').
             separate_err (bool): If True, return the error for each sample separately.
         Returns:

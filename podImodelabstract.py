@@ -86,8 +86,16 @@ class PODImodelAbstract(ABC):
             y (np.ndarray): The training data for which POD is to be performed.
         Returns:
             np.ndarray: The coefficients of the POD modes.
-        """
-        u, self.s_all, self.v_all = svd(y, full_matrices=False)
+        """        
+        try:
+            u, self.s_all, self.v_all = svd(y, full_matrices=False)
+        except Exception as e:
+            print(f"Error occurred during scipy.linalg.svd: {e}")
+            try:
+                u, self.s_all, self.v_all = np.linalg.svd(y, full_matrices=False)
+            except Exception as e:
+                print(f"Error occurred during numpy.linalg.svd: {e}")
+                return None
         self.coeffs = u @ np.diag(self.s_all)
 
     def validate(

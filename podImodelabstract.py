@@ -21,8 +21,8 @@ class PODImodelAbstract(ABC):
     def __init__(
         self,
         rank=10,
-        with_scalar_x: bool = True,
-        with_scalar_y: bool = True,
+        with_scaler_x: bool = True,
+        with_scaler_y: bool = True,
         POD_algo: str = "eigen",
     ):
         """
@@ -35,8 +35,8 @@ class PODImodelAbstract(ABC):
             POD (str): The method for POD ('svd' or 'eigen').
         """
         self.rank = rank
-        self.with_scalar_x = with_scalar_x
-        self.with_scalar_y = with_scalar_y
+        self.with_scaler_x = with_scaler_x
+        self.with_scaler_y = with_scaler_y
         self.POD_algo = POD_algo
 
     @abstractmethod

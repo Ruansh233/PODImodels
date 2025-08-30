@@ -28,19 +28,19 @@ class fieldsLinear(PODImodelAbstract):
         self.lin = LinearRegression()
 
     def fit(self, x, y):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
         self.lin.fit(x, y)
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.lin.predict(x))
         else:
             return self.lin.predict(x)
@@ -60,20 +60,20 @@ class PODLinear(PODImodelAbstract):
     def fit(self, x, y):
         y = self.performPOD(y)
 
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
 
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
         self.lin.fit(x, y)
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.lin.predict(x)) @ self.v
         else:
             return self.lin.predict(x) @ self.v
@@ -91,19 +91,19 @@ class fieldsRidge(PODImodelAbstract):
         self.lin = Ridge()
 
     def fit(self, x, y):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
         self.lin.fit(x, y)
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.lin.predict(x))
         else:
             return self.lin.predict(x)
@@ -123,19 +123,19 @@ class PODRidge(PODImodelAbstract):
     def fit(self, x, y):
         y = self.performPOD(y)
 
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
         self.lin.fit(x, y)
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.lin.predict(x)) @ self.v
         else:
             return self.lin.predict(x) @ self.v
@@ -164,10 +164,10 @@ class fieldsGPR(PODImodelAbstract):
         self.alpha = alpha
 
     def fit(self, x, y):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
@@ -175,9 +175,9 @@ class fieldsGPR(PODImodelAbstract):
         self.gpr.fit(x, y)
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.gpr.predict(x))
         else:
             return self.gpr.predict(x)
@@ -208,10 +208,10 @@ class PODGPR(PODImodelAbstract):
     def fit(self, x, y):
         y = self.performPOD(y)
 
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
@@ -219,9 +219,9 @@ class PODGPR(PODImodelAbstract):
         self.gpr.fit(x, y)
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.gpr.predict(x)) @ self.v
         else:
             return self.gpr.predict(x) @ self.v
@@ -253,10 +253,10 @@ class PODGPR2(PODImodelAbstract):
     def fit(self, x, y):
         y = self.performPOD(y)
 
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
@@ -268,10 +268,10 @@ class PODGPR2(PODImodelAbstract):
             self.gprs.append(gpr)
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         preds = np.array([gpr.predict(x) for gpr in self.gprs]).T
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(preds) @ self.v
         else:
             return preds @ self.v
@@ -301,10 +301,10 @@ class fieldsRidgeGPR(PODImodelAbstract):
         self.alpha = alpha
 
     def fit(self, x, y):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
@@ -315,9 +315,9 @@ class fieldsRidgeGPR(PODImodelAbstract):
         self.gpr.fit(x, y - self.lin.predict(x))
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(
                 self.gpr.predict(x) + self.lin.predict(x)
             )
@@ -352,10 +352,10 @@ class PODRidgeGPR(PODImodelAbstract):
         self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
         self.lin = Ridge()
 
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
@@ -363,9 +363,9 @@ class PODRidgeGPR(PODImodelAbstract):
         self.gpr.fit(x, y - self.lin.predict(x))
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             tmp = self.scalar_Y.inverse_transform(
                 self.lin.predict(x) + self.gpr.predict(x)
             )
@@ -396,10 +396,10 @@ class fieldsRBF(PODImodelAbstract):
         self.neighbors = neighbors
 
     def fit(self, x, y):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
@@ -408,9 +408,9 @@ class fieldsRBF(PODImodelAbstract):
         )
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.rbf(x))
         else:
             return self.rbf(x)
@@ -441,10 +441,10 @@ class PODRBF(PODImodelAbstract):
     def fit(self, x, y):
         y = self.performPOD(y)
 
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
@@ -453,9 +453,9 @@ class PODRBF(PODImodelAbstract):
         )
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             tmp = self.scalar_Y.inverse_transform(self.rbf(x))
             return tmp @ self.v
         else:
@@ -487,10 +487,10 @@ class PODRBF2(PODImodelAbstract):
     def fit(self, x, y):
         y = self.performPOD(y)
 
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
@@ -507,10 +507,10 @@ class PODRBF2(PODImodelAbstract):
             self.rbfs.append(rbf)
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         pod_coeffs = np.array([rbf(x) for rbf in self.rbfs]).T
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(pod_coeffs) @ self.v
         else:
             return pod_coeffs @ self.v
@@ -540,10 +540,10 @@ class fieldsRidgeRBF(PODImodelAbstract):
         self.neighbors = neighbors
 
     def fit(self, x, y):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
@@ -557,9 +557,9 @@ class fieldsRidgeRBF(PODImodelAbstract):
         )
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             tmp = self.scalar_Y.inverse_transform(self.rbf(x) + self.lin.predict(x))
             return tmp
         else:
@@ -592,10 +592,10 @@ class PODRidgeRBF(PODImodelAbstract):
     def fit(self, x, y):
         y = self.performPOD(y)
 
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
 
@@ -609,9 +609,9 @@ class PODRidgeRBF(PODImodelAbstract):
         )
 
     def predict(self, x):
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             tmp = self.scalar_Y.inverse_transform(self.lin.predict(x) + self.rbf(x))
             return tmp @ self.v
         else:
@@ -812,11 +812,11 @@ class PODANN(PODImodelAbstract):
         output_dim = y.shape[1]
 
         # 1. Normalize input and output data
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             # Initialize scaler for input data
             self.scalar_X = MinMaxScaler()
             x = self.scalar_X.fit_transform(x)
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             # Initialize scaler for output data
             self.scalar_Y = MinMaxScaler()
             y = self.scalar_Y.fit_transform(y)
@@ -919,7 +919,7 @@ class PODANN(PODImodelAbstract):
         self.model.eval()
 
         # Normalize test input data
-        if self.with_scalar_x:
+        if self.with_scaler_x:
             x = self.scalar_X.transform(x)
 
         # Convert to PyTorch tensor
@@ -929,7 +929,7 @@ class PODANN(PODImodelAbstract):
             predictions = self.model(X_test_tensor).cpu().numpy()
 
         # De-normalize the predictions
-        if self.with_scalar_y:
+        if self.with_scaler_y:
             predictions = self.scalar_Y.inverse_transform(predictions)
         else:
             predictions = predictions

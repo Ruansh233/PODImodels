@@ -40,12 +40,49 @@ class PODImodelAbstract(ABC):
         self.POD_algo = POD_algo
 
     @abstractmethod
-    def fit(self, x: np.ndarray, y: np.ndarray):
-        """Abstract `fit`"""
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+        """Abstract `fit_tmp`"""
 
     @abstractmethod
-    def predict(self, new_x: np.ndarray) -> np.ndarray:
-        """Abstract `predict`"""
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
+        """Abstract `predict_tmp`"""
+
+    def fit(self, x: np.ndarray, y: np.ndarray):
+        """
+        Fit the model to the training data.
+
+        Args:
+            x (np.ndarray): The input features.
+            y (np.ndarray): The target values.
+        """
+        if x.shape[0] != y.shape[0]:
+            raise ValueError("Number of samples in X_train and y_train must match.")
+        if x.ndim != 2 or y.ndim != 2:
+            raise ValueError("Input and output data must be 2D numpy arrays.")
+        
+        if "POD" in self.__class__.__name__:
+            y = self.performPOD(y)
+
+        if self.with_scaler_x:
+            self.scalar_X = MinMaxScaler()
+            x = self.scalar_X.fit_transform(x)
+        if self.with_scaler_y:
+            self.scalar_Y = MinMaxScaler()
+            y = self.scalar_Y.fit_transform(y)
+
+        self.fit_tmp(x, y)
+
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        """
+        Predict the target values for the given input features.
+
+        Args:
+            x (np.ndarray): The input features.
+
+        Returns:
+            np.ndarray: The predicted target values.
+        """
+        return self.predict_tmp(x)
 
     def frobenius_norm(
         self, x: np.ndarray, y: np.ndarray, separate_err=False

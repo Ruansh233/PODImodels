@@ -27,17 +27,10 @@ class fieldsLinear(PODImodelAbstract):
 
         self.lin = LinearRegression()
 
-    def fit(self, x, y):
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.lin.fit(x, y)
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -57,20 +50,10 @@ class PODLinear(PODImodelAbstract):
 
         self.lin = LinearRegression()
 
-    def fit(self, x, y):
-        y = self.performPOD(y)
-
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.lin.fit(x, y)
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -90,17 +73,10 @@ class fieldsRidge(PODImodelAbstract):
 
         self.lin = Ridge()
 
-    def fit(self, x, y):
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.lin.fit(x, y)
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -120,19 +96,10 @@ class PODRidge(PODImodelAbstract):
 
         self.lin = Ridge()
 
-    def fit(self, x, y):
-        y = self.performPOD(y)
-
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.lin.fit(x, y)
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -163,18 +130,11 @@ class fieldsGPR(PODImodelAbstract):
 
         self.alpha = alpha
 
-    def fit(self, x, y):
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
         self.gpr.fit(x, y)
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -205,20 +165,11 @@ class PODGPR(PODImodelAbstract):
             self.kernel = kernel
         self.alpha = alpha
 
-    def fit(self, x, y):
-        y = self.performPOD(y)
-
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
         self.gpr.fit(x, y)
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -250,16 +201,7 @@ class PODGPR2(PODImodelAbstract):
             self.kernel = kernel
         self.alpha = alpha
 
-    def fit(self, x, y):
-        y = self.performPOD(y)
-
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         # create separate GPR for each POD coefficient
         self.gprs = []
         for i in range(self.rank):
@@ -267,7 +209,7 @@ class PODGPR2(PODImodelAbstract):
             gpr.fit(x, y[:, i])
             self.gprs.append(gpr)
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         preds = np.array([gpr.predict(x) for gpr in self.gprs]).T
@@ -300,21 +242,14 @@ class fieldsRidgeGPR(PODImodelAbstract):
 
         self.alpha = alpha
 
-    def fit(self, x, y):
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
         self.lin = Ridge()
 
         self.lin.fit(x, y)
         self.gpr.fit(x, y - self.lin.predict(x))
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -347,22 +282,14 @@ class PODRidgeGPR(PODImodelAbstract):
             self.kernel = kernel
         self.alpha = alpha
 
-    def fit(self, x, y):
-        y = self.performPOD(y)
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
         self.lin = Ridge()
-
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
 
         self.lin.fit(x, y)
         self.gpr.fit(x, y - self.lin.predict(x))
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -395,19 +322,12 @@ class fieldsRBF(PODImodelAbstract):
         self.epsilon = epsilon
         self.neighbors = neighbors
 
-    def fit(self, x, y):
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.rbf = RBFInterpolator(
             x, y, kernel=self.kernel, epsilon=self.epsilon, neighbors=self.neighbors
         )
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -438,21 +358,12 @@ class PODRBF(PODImodelAbstract):
         self.epsilon = epsilon
         self.neighbors = neighbors
 
-    def fit(self, x, y):
-        y = self.performPOD(y)
-
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.rbf = RBFInterpolator(
             x, y, kernel=self.kernel, epsilon=self.epsilon, neighbors=self.neighbors
         )
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -484,16 +395,7 @@ class PODRBF2(PODImodelAbstract):
         self.epsilon = epsilon
         self.neighbors = neighbors
 
-    def fit(self, x, y):
-        y = self.performPOD(y)
-
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         # create separate RBFInterpolator for each POD coefficient
         self.rbfs = []
         for i in range(self.rank):
@@ -506,7 +408,7 @@ class PODRBF2(PODImodelAbstract):
             )
             self.rbfs.append(rbf)
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         pod_coeffs = np.array([rbf(x) for rbf in self.rbfs]).T
@@ -539,14 +441,7 @@ class fieldsRidgeRBF(PODImodelAbstract):
         self.lin = Ridge()
         self.neighbors = neighbors
 
-    def fit(self, x, y):
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.lin.fit(x, y)
         self.rbf = RBFInterpolator(
             x,
@@ -556,7 +451,7 @@ class fieldsRidgeRBF(PODImodelAbstract):
             neighbors=self.neighbors,
         )
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -589,16 +484,7 @@ class PODRidgeRBF(PODImodelAbstract):
         self.lin = Ridge()
         self.neighbors = neighbors
 
-    def fit(self, x, y):
-        y = self.performPOD(y)
-
-        if self.with_scaler_x:
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
-
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         self.lin.fit(x, y)
         self.rbf = RBFInterpolator(
             x,
@@ -608,7 +494,7 @@ class PODRidgeRBF(PODImodelAbstract):
             neighbors=self.neighbors,
         )
 
-    def predict(self, x):
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -692,7 +578,7 @@ class PODANN(PODImodelAbstract):
         self.model = None
 
         # Set random seed for reproducibility
-        self._set_all_seeds(self.random_seed)
+        self._set_all_seeds()
 
     def _get_activation_function(self):
         if (
@@ -771,12 +657,11 @@ class PODANN(PODImodelAbstract):
         print(self.model)
         print("--------------------------\n")
 
-    def _set_all_seeds(self, seed: int):
+    def _set_all_seeds(self):
         """
         Sets the random seed for reproducibility across different libraries.
-        Args:
-            seed (int): The seed value to use.
         """
+        seed = self.random_seed
         np.random.seed(seed)  # NumPy seed
         random.seed(seed)  # Python's built-in random module seed
         torch.manual_seed(seed)  # PyTorch CPU seed
@@ -789,7 +674,7 @@ class PODANN(PODImodelAbstract):
             torch.backends.cudnn.benchmark = False
             print(f"CUDA deterministic set to {torch.backends.cudnn.deterministic}")
 
-    def fit(self, x: np.ndarray, y: np.ndarray):
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
         """
         Trains the neural network model.
 
@@ -799,27 +684,8 @@ class PODANN(PODImodelAbstract):
             y_train (np.ndarray): Training output data (high fidelity data).
                                   Shape: (num_samples, output_dim).
         """
-
-        # perform POD reduction if not already done
-        y = self.performPOD(y)
-
-        if x.shape[0] != y.shape[0]:
-            raise ValueError("Number of samples in X_train and y_train must match.")
-        if x.ndim != 2 or y.ndim != 2:
-            raise ValueError("Input and output data must be 2D numpy arrays.")
-
         input_dim = x.shape[1]
         output_dim = y.shape[1]
-
-        # 1. Normalize input and output data
-        if self.with_scaler_x:
-            # Initialize scaler for input data
-            self.scalar_X = MinMaxScaler()
-            x = self.scalar_X.fit_transform(x)
-        if self.with_scaler_y:
-            # Initialize scaler for output data
-            self.scalar_Y = MinMaxScaler()
-            y = self.scalar_Y.fit_transform(y)
 
         # Convert numpy arrays to PyTorch tensors
         X_train_tensor = torch.tensor(x, dtype=torch.float32).to(self.device)
@@ -898,7 +764,7 @@ class PODANN(PODImodelAbstract):
 
         print("Model training finished.")
 
-    def predict(self, x: np.ndarray) -> np.ndarray:
+    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         """
         Predicts POD coefficients for new input data using the trained model.
 
@@ -910,11 +776,12 @@ class PODANN(PODImodelAbstract):
             np.ndarray: Predicted POD coefficients.
                         Shape: (num_samples, output_dim).
         """
+
         if self.model is None:
             raise RuntimeError("Model has not been trained. Call .fit() first.")
         if x.ndim != 2:
             raise ValueError("Test input data must be a 2D numpy array.")
-
+        
         # Set model to evaluation mode (important for layers like Dropout if they were used)
         self.model.eval()
 

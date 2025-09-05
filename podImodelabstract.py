@@ -59,7 +59,7 @@ class PODImodelAbstract(ABC):
             raise ValueError("Number of samples in X_train and y_train must match.")
         if x.ndim != 2 or y.ndim != 2:
             raise ValueError("Input and output data must be 2D numpy arrays.")
-        
+
         if "POD" in self.__class__.__name__:
             y = self.performPOD(y)
 
@@ -211,6 +211,10 @@ class PODImodelAbstract(ABC):
         refVTMName: str,
         saveFileName: str,
         dataType: str,
+        x_train: np.ndarray = None,
+        y_train: np.ndarray = None,
+        x_test: np.ndarray = None,
+        y_test: np.ndarray = None,
         is2D: bool = False,
     ):
         """
@@ -220,12 +224,17 @@ class PODImodelAbstract(ABC):
             y (np.ndarray): Target values.
             refVTMName (str): Name of the reference VTM file.
             saveFileName (str): Name of the file to save the results.
-            dataType (str): Type of data to be written.
+            dataType (str): Type of data to be written. E.g., 'Scalar' or 'Vector'.
+            x_train (np.ndarray, optional): Training input features. Defaults to None.
+            y_train (np.ndarray, optional): Training target values. Defaults to None.
+            x_test (np.ndarray, optional): Testing input features. Defaults to None.
+            y_test (np.ndarray, optional): Testing target values. Defaults to None.
             is2D (bool): Whether the data is 2D or not.
         """
-        x_train, x_test, y_train, y_test = train_test_split(
-            x, y, train_size=0.8, random_state=42
-        )
+        if x_train is None or y_train is None or x_test is None or y_test is None:
+            x_train, x_test, y_train, y_test = train_test_split(
+                x, y, train_size=0.8, random_state=42
+            )
         self.fit(x_train, y_train)
 
         # Write the velocity data into VTK file

@@ -14,6 +14,7 @@ PODImodelAbstract
 """
 
 from abc import ABC, abstractmethod
+import warnings
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
@@ -86,11 +87,11 @@ class PODImodelAbstract(ABC):
     ...     def __init__(self, **kwargs):
     ...         super().__init__(**kwargs)
     ...         # Initialize specific model
-    ...     
+    ...
     ...     def fit_tmp(self, x, y):
     ...         # Implement specific fitting logic
     ...         pass
-    ...     
+    ...
     ...     def predict_tmp(self, x):
     ...         # Implement specific prediction logic
     ...         return predictions
@@ -243,7 +244,7 @@ class PODImodelAbstract(ABC):
         -----
         The relative Frobenius norm is calculated as:
         ||y_true - y_pred||_F / ||y_true||_F
-        
+
         For separate errors, it's calculated per sample as:
         ||y_true[i] - y_pred[i]||_2 / ||y_true[i]||_2
         """
@@ -354,17 +355,17 @@ class PODImodelAbstract(ABC):
         Notes
         -----
         Two algorithms are supported:
-        
+
         1. 'svd': Direct SVD decomposition
            - More accurate for well-conditioned problems
            - Better numerical stability
            - Recommended for most applications
-           
+
         2. 'eigen': Eigenvalue decomposition of the covariance matrix
            - More memory efficient for wide matrices (n_features >> n_samples)
            - Potentially less stable for ill-conditioned problems
            - Useful when n_samples << n_features
-           
+
         The method stores the full decomposition in attributes:
         - s_all: all singular values
         - v_all: all POD modes (right singular vectors)
@@ -501,9 +502,9 @@ class PODImodelAbstract(ABC):
         -----
         The method creates a VTK file with three sets of fields for each test sample:
         - 'true_{i}': Original target values
-        - 'rec_{i}': Reconstructed/predicted values  
+        - 'rec_{i}': Reconstructed/predicted values
         - 'err_{i}': Absolute error (true - predicted)
-        
+
         If no specific train/test split is provided, the method uses an 80-20 split
         with random_state=42.
 
@@ -712,7 +713,7 @@ class PODImodelAbstract(ABC):
         - Systematic rank selection studies
         - Benchmarking with consistent datasets
         - Error analysis across different dimensionality reductions
-        
+
         The original rank setting is modified during the process and should be
         reset if needed after calling this method.
         """
@@ -728,3 +729,21 @@ class PODImodelAbstract(ABC):
                 print("Please enter variable norm with value 'Frobenius' or 'inf'")
                 assert False
         return np.array(self.errors)
+
+    @staticmethod
+    def check_input(x: np.ndarray) -> np.ndarray:
+        for i in range(x.shape[0]):
+            for j in range(x.shape[1]):
+                if x[i, j] > 1.1:
+                    x[i, j] = 1.1
+                    warnings.warn(
+                        f"The scaled input ({i}, {j}) is > 1.1. The value 1.1 will be used!",
+                        UserWarning,
+                    )
+                elif x[i, j] < -0.1:
+                    x[i, j] = -0.1
+                    warnings.warn(
+                        f"The scaled input ({i}, {j}) is < -0.1. The value -0.1 will be used!",
+                        UserWarning,
+                    )
+        return x

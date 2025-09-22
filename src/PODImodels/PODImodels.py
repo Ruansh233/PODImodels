@@ -3,7 +3,7 @@ POD-based Interpolation Models Implementation
 =============================================
 
 This module contains concrete implementations of POD-based interpolation models
-that inherit from PODImodelAbstract. These models combine Proper Orthogonal 
+that inherit from PODImodelAbstract. These models combine Proper Orthogonal
 Decomposition with various machine learning techniques for reduced-order modeling
 of high-dimensional field data.
 
@@ -16,7 +16,7 @@ Available Models
 Linear Regression Models:
 - fieldsLinear: Direct field prediction using linear regression
 - PODLinear: POD coefficient prediction using linear regression
-- fieldsRidge: Direct field prediction using Ridge regression  
+- fieldsRidge: Direct field prediction using Ridge regression
 - PODRidge: POD coefficient prediction using Ridge regression
 
 Gaussian Process Regression Models:
@@ -141,6 +141,7 @@ class fieldsLinear(PODImodelAbstract):
         """
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.lin.predict(x))
         else:
@@ -226,6 +227,7 @@ class PODLinear(PODImodelAbstract):
         """
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.lin.predict(x)) @ self.v
         else:
@@ -249,6 +251,7 @@ class fieldsRidge(PODImodelAbstract):
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.lin.predict(x))
         else:
@@ -272,6 +275,7 @@ class PODRidge(PODImodelAbstract):
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.lin.predict(x)) @ self.v
         else:
@@ -323,7 +327,10 @@ class fieldsGPR(PODImodelAbstract):
     """
 
     def __init__(
-        self, kernel: Optional[Kernel] = None, alpha: float = 1.0e-10, **kwargs
+        self, 
+        kernel: Optional[Kernel] = None, 
+        alpha: float = 1.0e-10, 
+        **kwargs
     ):
         """
         Initialize the fieldsGPR model.
@@ -382,6 +389,7 @@ class fieldsGPR(PODImodelAbstract):
         """
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.gpr.predict(x))
         else:
@@ -424,7 +432,7 @@ class PODGPR(PODImodelAbstract):
     -----
     This model offers several advantages:
     - Computational efficiency through dimensionality reduction
-    - Uncertainty quantification for predictions  
+    - Uncertainty quantification for predictions
     - Automatic hyperparameter optimization via marginal likelihood
     - Suitable for nonlinear parameter-field relationships
 
@@ -443,9 +451,9 @@ class PODGPR(PODImodelAbstract):
     """
 
     def __init__(
-        self,
-        kernel: Optional[Kernel] = None,
-        alpha: float = 1.0e-10,
+        self, 
+        kernel: Optional[Kernel] = None, 
+        alpha: float = 1.0e-10, 
         **kwargs
     ):
         """
@@ -470,58 +478,18 @@ class PODGPR(PODImodelAbstract):
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.gpr.predict(x)) @ self.v
         else:
             return self.gpr.predict(x) @ self.v
 
 
-class PODGPR2(PODImodelAbstract):
-    def __init__(
-        self,
-        kernel: Optional[Kernel] = None,
-        alpha: float = 1.0e-10,
-        **kwargs
-    ):
-        """
-        Initialize the PODGPR model.
-
-        Args:
-            kernel (Optional[Kernel]): The kernel to use for the GPR.
-            alpha (float): The noise level for the GPR.
-            rank (int): The rank for POD.
-        """
-        super().__init__(**kwargs)
-
-        if kernel is None:
-            self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
-        else:
-            self.kernel = kernel
-        self.alpha = alpha
-
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
-        # create separate GPR for each POD coefficient
-        self.gprs = []
-        for i in range(self.rank):
-            gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
-            gpr.fit(x, y[:, i])
-            self.gprs.append(gpr)
-
-    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
-        if self.with_scaler_x:
-            x = self.scalar_X.transform(x)
-        preds = np.array([gpr.predict(x) for gpr in self.gprs]).T
-        if self.with_scaler_y:
-            return self.scalar_Y.inverse_transform(preds) @ self.v
-        else:
-            return preds @ self.v
-
-
 class fieldsRidgeGPR(PODImodelAbstract):
     def __init__(
-        self,
-        kernel: Optional[Kernel] = None,
-        alpha: float = 1.0e-10,
+        self, 
+        kernel: Optional[Kernel] = None, 
+        alpha: float = 1.0e-10, 
         **kwargs
     ):
         """
@@ -550,6 +518,7 @@ class fieldsRidgeGPR(PODImodelAbstract):
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(
                 self.gpr.predict(x) + self.lin.predict(x)
@@ -560,9 +529,9 @@ class fieldsRidgeGPR(PODImodelAbstract):
 
 class PODRidgeGPR(PODImodelAbstract):
     def __init__(
-        self,
-        kernel: Optional[Kernel] = None,
-        alpha: float = 1.0e-10,
+        self, 
+        kernel: Optional[Kernel] = None, 
+        alpha: float = 1.0e-10, 
         **kwargs
     ):
         """
@@ -590,6 +559,7 @@ class PODRidgeGPR(PODImodelAbstract):
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             tmp = self.scalar_Y.inverse_transform(
                 self.lin.predict(x) + self.gpr.predict(x)
@@ -605,7 +575,7 @@ class fieldsRBF(PODImodelAbstract):
         kernel: str = "linear",
         epsilon: float = 1.0,
         neighbors: int = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize the fieldsRBF model.
@@ -628,6 +598,7 @@ class fieldsRBF(PODImodelAbstract):
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             return self.scalar_Y.inverse_transform(self.rbf(x))
         else:
@@ -664,56 +635,12 @@ class PODRBF(PODImodelAbstract):
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             tmp = self.scalar_Y.inverse_transform(self.rbf(x))
             return tmp @ self.v
         else:
             return self.rbf(x) @ self.v
-
-
-class PODRBF2(PODImodelAbstract):
-    def __init__(
-        self,
-        kernel: str = "linear",
-        epsilon: float = 1.0,
-        neighbors: int = None,
-        **kwargs
-    ):
-        """
-        Initialize the PODRBF model.
-
-        Args:
-            kernel (str): The kernel to use for the RBF interpolator.
-            epsilon (float): The epsilon parameter for the RBF interpolator.
-            neighbors (int): The number of neighbors for the RBF interpolator.
-        """
-        super().__init__(**kwargs)
-
-        self.kernel = kernel
-        self.epsilon = epsilon
-        self.neighbors = neighbors
-
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
-        # create separate RBFInterpolator for each POD coefficient
-        self.rbfs = []
-        for i in range(self.rank):
-            rbf = RBFInterpolator(
-                x,
-                y[:, i],
-                kernel=self.kernel,
-                epsilon=self.epsilon,
-                neighbors=self.neighbors,
-            )
-            self.rbfs.append(rbf)
-
-    def predict_tmp(self, x: np.ndarray) -> np.ndarray:
-        if self.with_scaler_x:
-            x = self.scalar_X.transform(x)
-        pod_coeffs = np.array([rbf(x) for rbf in self.rbfs]).T
-        if self.with_scaler_y:
-            return self.scalar_Y.inverse_transform(pod_coeffs) @ self.v
-        else:
-            return pod_coeffs @ self.v
 
 
 class fieldsRidgeRBF(PODImodelAbstract):
@@ -722,7 +649,7 @@ class fieldsRidgeRBF(PODImodelAbstract):
         kernel: str = "linear",
         epsilon: float = 1.0,
         neighbors: int = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize the fieldsRidgeRBF model.
@@ -752,6 +679,7 @@ class fieldsRidgeRBF(PODImodelAbstract):
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             tmp = self.scalar_Y.inverse_transform(self.rbf(x) + self.lin.predict(x))
             return tmp
@@ -765,7 +693,7 @@ class PODRidgeRBF(PODImodelAbstract):
         kernel: str = "linear",
         epsilon: float = 1.0,
         neighbors: int = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize the PODRidgeRBF model.
@@ -795,6 +723,7 @@ class PODRidgeRBF(PODImodelAbstract):
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
         if self.with_scaler_y:
             tmp = self.scalar_Y.inverse_transform(self.lin.predict(x) + self.rbf(x))
             return tmp @ self.v
@@ -824,7 +753,7 @@ class PODANN(PODImodelAbstract):
         stop_threshold: float = 1e-4,
         random_seed: int = 42,
         with_weight: bool = True,
-        **kwargs
+        **kwargs,
     ):
         """
         Initializes the PODANN.
@@ -1079,13 +1008,14 @@ class PODANN(PODImodelAbstract):
             raise RuntimeError("Model has not been trained. Call .fit() first.")
         if x.ndim != 2:
             raise ValueError("Test input data must be a 2D numpy array.")
-        
+
         # Set model to evaluation mode (important for layers like Dropout if they were used)
         self.model.eval()
 
         # Normalize test input data
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
+            x = self.check_input(x)
 
         # Convert to PyTorch tensor
         X_test_tensor = torch.tensor(x, dtype=torch.float32).to(self.device)

@@ -9,7 +9,7 @@ from scipy.linalg import svd
 from scipy.interpolate import RBFInterpolator
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
-from podImodelabstract import PODImodelAbstract
+from .podImodelabstract import PODImodelAbstract
 import torch
 import torch.nn as nn
 import torch.optim as optim

@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.linalg import svd
 import pyvista as pv
+from typing import List
 
 
 # def vtk_writer(
@@ -42,8 +43,8 @@ import pyvista as pv
 #     refVTM.save(output_vtm_file_path)
 
 def vtk_writer(
-    field_data: list[np.ndarray],
-    field_name: list[str],
+    field_data: List[np.ndarray],
+    field_name: List[str],
     data_type: str,
     refVTMName: str,
     save_path_name: str,

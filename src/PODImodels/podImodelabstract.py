@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 import pyvista as pv
-from PODdata import vtk_writer
+from .PODdata import vtk_writer
 from scipy.linalg import svd
 
 

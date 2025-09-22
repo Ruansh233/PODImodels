@@ -1,4 +1,17 @@
-"""Module for the PODImodelAbstract abstract class"""
+"""
+POD-based Interpolation Model Abstract Base Class
+=================================================
+
+This module defines the abstract base class for all POD-based interpolation models.
+It provides a common interface and shared functionality for building reduced-order
+models that combine Proper Orthogonal Decomposition with various machine learning
+techniques.
+
+Classes
+-------
+PODImodelAbstract
+    Abstract base class for POD-based interpolation models.
+"""
 
 from abc import ABC, abstractmethod
 import numpy as np
@@ -11,10 +24,76 @@ from scipy.linalg import svd
 
 class PODImodelAbstract(ABC):
     """
-    The abstract `PODImodelAbstract` class.
+    Abstract base class for POD-based interpolation models.
 
-    All the classes that implement the input-output mapping should be inherited
-    from this class.
+    This class provides a common interface for building reduced-order models that
+    combine Proper Orthogonal Decomposition (POD) with various machine learning
+    techniques. All concrete interpolation model classes should inherit from this
+    class and implement the abstract methods.
+
+    The class handles common functionality including:
+    - Data scaling and preprocessing
+    - POD decomposition for dimensionality reduction
+    - Model validation and error assessment
+    - VTK file output for visualization
+
+    Parameters
+    ----------
+    rank : int, optional
+        The number of POD modes to retain. Default is 10.
+    with_scaler_x : bool, optional
+        Whether to apply MinMax scaling to input features. Default is True.
+    with_scaler_y : bool, optional
+        Whether to apply MinMax scaling to target values. Default is True.
+    POD_algo : {'svd', 'eigen'}, optional
+        The algorithm to use for POD computation. 'svd' uses singular value
+        decomposition, 'eigen' uses eigenvalue decomposition. Default is 'eigen'.
+
+    Attributes
+    ----------
+    rank : int
+        Number of POD modes to retain.
+    with_scaler_x : bool
+        Flag for input scaling.
+    with_scaler_y : bool
+        Flag for output scaling.
+    POD_algo : str
+        POD algorithm type.
+    scalar_X : MinMaxScaler, optional
+        Scaler for input features (created if with_scaler_x=True).
+    scalar_Y : MinMaxScaler, optional
+        Scaler for output features (created if with_scaler_y=True).
+    v : np.ndarray
+        Truncated POD modes matrix.
+    v_all : np.ndarray
+        Full POD modes matrix.
+    s : np.ndarray
+        Truncated singular values.
+    s_all : np.ndarray
+        Full singular values.
+    coeffs : np.ndarray
+        POD coefficients matrix.
+
+    Notes
+    -----
+    Subclasses must implement `fit_tmp` and `predict_tmp` methods to define
+    the specific machine learning algorithm used for interpolation.
+
+    Examples
+    --------
+    >>> # Define a concrete implementation (example)
+    >>> class MyPODModel(PODImodelAbstract):
+    ...     def __init__(self, **kwargs):
+    ...         super().__init__(**kwargs)
+    ...         # Initialize specific model
+    ...     
+    ...     def fit_tmp(self, x, y):
+    ...         # Implement specific fitting logic
+    ...         pass
+    ...     
+    ...     def predict_tmp(self, x):
+    ...         # Implement specific prediction logic
+    ...         return predictions
     """
 
     @abstractmethod
@@ -26,13 +105,18 @@ class PODImodelAbstract(ABC):
         POD_algo: str = "eigen",
     ):
         """
-        Abstract `__init__` method.
+        Abstract initialization method.
 
-        Args:
-            rank (int): The rank for the POD modes.
-            with_scalar_x (bool): Whether to scale the input features.
-            with_scalar_y (bool): Whether to scale the target values.
-            POD (str): The method for POD ('svd' or 'eigen').
+        Parameters
+        ----------
+        rank : int, optional
+            The number of POD modes to retain. Default is 10.
+        with_scaler_x : bool, optional
+            Whether to apply MinMax scaling to input features. Default is True.
+        with_scaler_y : bool, optional
+            Whether to apply MinMax scaling to target values. Default is True.
+        POD_algo : {'svd', 'eigen'}, optional
+            The algorithm to use for POD computation. Default is 'eigen'.
         """
         self.rank = rank
         self.with_scaler_x = with_scaler_x
@@ -41,19 +125,58 @@ class PODImodelAbstract(ABC):
 
     @abstractmethod
     def fit_tmp(self, x: np.ndarray, y: np.ndarray):
-        """Abstract `fit_tmp`"""
+        """
+        Abstract method for model-specific fitting logic.
+
+        This method should be implemented by subclasses to define the specific
+        machine learning algorithm used for learning the input-output mapping.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Preprocessed input features of shape (n_samples, n_features).
+        y : np.ndarray
+            Preprocessed target values of shape (n_samples, n_targets).
+        """
 
     @abstractmethod
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
-        """Abstract `predict_tmp`"""
+        """
+        Abstract method for model-specific prediction logic.
+
+        This method should be implemented by subclasses to define how predictions
+        are made using the trained model.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features for prediction.
+
+        Returns
+        -------
+        np.ndarray
+            Predicted values.
+        """
 
     def fit(self, x: np.ndarray, y: np.ndarray):
         """
         Fit the model to the training data.
 
-        Args:
-            x (np.ndarray): The input features.
-            y (np.ndarray): The target values.
+        This method handles the complete training pipeline including input validation,
+        POD decomposition (if applicable), data scaling, and calling the model-specific
+        fitting method.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features of shape (n_samples, n_input_features).
+        y : np.ndarray
+            Target values of shape (n_samples, n_output_features).
+
+        Raises
+        ------
+        ValueError
+            If the number of samples in x and y don't match, or if inputs are not 2D.
         """
         if x.shape[0] != y.shape[0]:
             raise ValueError("Number of samples in X_train and y_train must match.")
@@ -74,28 +197,55 @@ class PODImodelAbstract(ABC):
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """
-        Predict the target values for the given input features.
+        Predict target values for given input features.
 
-        Args:
-            x (np.ndarray): The input features.
+        This method serves as a wrapper around the model-specific prediction method,
+        ensuring consistent interface across all model types.
 
-        Returns:
-            np.ndarray: The predicted target values.
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features of shape (n_samples, n_input_features).
+
+        Returns
+        -------
+        np.ndarray
+            Predicted target values of shape (n_samples, n_output_features).
         """
         return self.predict_tmp(x)
 
     def frobenius_norm(
         self, x: np.ndarray, y: np.ndarray, separate_err=False
     ) -> np.ndarray:
-        """Calculate the Frobenius norm of the difference between true and predicted values.
-        If `separate_err` is True, return the error for each sample separately.
-        Otherwise, return the overall error.
-        Args:
-            x (np.ndarray): Input features.
-            y (np.ndarray): True target values.
-            separate_err (bool): If True, return the error for each sample separately.
-        Returns:
-            np.ndarray: The Frobenius norm of the prediction error.
+        """
+        Calculate the Frobenius norm of prediction errors.
+
+        Computes the relative Frobenius norm between true and predicted values,
+        which provides a measure of the overall prediction accuracy.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features for prediction.
+        y : np.ndarray
+            True target values.
+        separate_err : bool, optional
+            If True, return the error for each sample separately.
+            If False, return the overall aggregated error. Default is False.
+
+        Returns
+        -------
+        np.ndarray or float
+            If separate_err=True, returns array of relative errors for each sample.
+            If separate_err=False, returns overall relative Frobenius norm error.
+
+        Notes
+        -----
+        The relative Frobenius norm is calculated as:
+        ||y_true - y_pred||_F / ||y_true||_F
+        
+        For separate errors, it's calculated per sample as:
+        ||y_true[i] - y_pred[i]||_2 / ||y_true[i]||_2
         """
         if separate_err:
             err = []
@@ -107,6 +257,33 @@ class PODImodelAbstract(ABC):
             return np.linalg.norm(y - self.predict(x)) / np.linalg.norm(y)
 
     def inf_norm(self, x: np.ndarray, y: np.ndarray, separate_err=False) -> np.ndarray:
+        """
+        Calculate the infinity norm of prediction errors.
+
+        Computes the maximum absolute error between true and predicted values,
+        which provides a measure of the worst-case prediction error.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features for prediction.
+        y : np.ndarray
+            True target values.
+        separate_err : bool, optional
+            If True, return the error for each sample separately.
+            If False, return the overall aggregated error. Default is False.
+
+        Returns
+        -------
+        np.ndarray or float
+            If separate_err=True, returns array of infinity norm errors for each sample.
+            If separate_err=False, returns overall infinity norm error.
+
+        Notes
+        -----
+        The infinity norm is the maximum absolute difference:
+        ||y_true - y_pred||_∞ = max|y_true - y_pred|
+        """
         if separate_err:
             err = []
             y_pred = self.predict(x)
@@ -118,14 +295,35 @@ class PODImodelAbstract(ABC):
 
     def performPOD(self, y: np.ndarray) -> np.ndarray:
         """
-        Perform Proper Orthogonal Decomposition (POD) on the training data.
-        This method is called in the `fit` method of the derived classes.
-        Args:
-            y (np.ndarray): The training data for which POD is to be performed.
-        Returns:
-            np.ndarray: The coefficients of the POD modes.
-        Raises:
-            ValueError: If the rank is greater than the number of modes.
+        Perform Proper Orthogonal Decomposition on the training data.
+
+        This method applies POD to reduce the dimensionality of the target data
+        from the full field representation to a reduced set of POD coefficients.
+        It handles the truncation to the specified rank and validates the input.
+
+        Parameters
+        ----------
+        y : np.ndarray
+            Training data matrix of shape (n_samples, n_features) for which
+            POD decomposition is to be performed.
+
+        Returns
+        -------
+        np.ndarray
+            POD coefficients matrix of shape (n_samples, rank) representing
+            the training data in the reduced POD space.
+
+        Raises
+        ------
+        ValueError
+            If the specified rank is greater than the number of available modes.
+
+        Notes
+        -----
+        This method calls `reduction` if POD has not been computed yet, then
+        truncates the modes and coefficients to the specified rank. The POD
+        decomposition follows: y ≈ coeffs @ modes, where coeffs are the returned
+        values and modes are stored in self.v.
         """
         if not hasattr(self, "v_all"):
             self.reduction(y)
@@ -137,13 +335,40 @@ class PODImodelAbstract(ABC):
 
     def reduction(self, y):
         """
-        Perform Proper Orthogonal Decomposition (POD) on the training data using
-        the specified method (SVD or eigenvalue decomposition).
-        This method is called in the `fit` method of the derived classes.
-        Args:
-            y (np.ndarray): The training data for which POD is to be performed.
-        Returns:
-            np.ndarray: The coefficients of the POD modes.
+        Perform POD using the specified algorithm (SVD or eigenvalue decomposition).
+
+        This method computes the full POD decomposition of the training data using
+        either singular value decomposition or eigenvalue decomposition, depending
+        on the POD_algo parameter.
+
+        Parameters
+        ----------
+        y : np.ndarray
+            Training data matrix of shape (n_samples, n_features).
+
+        Raises
+        ------
+        ValueError
+            If an invalid POD algorithm is specified.
+
+        Notes
+        -----
+        Two algorithms are supported:
+        
+        1. 'svd': Direct SVD decomposition
+           - More accurate for well-conditioned problems
+           - Better numerical stability
+           - Recommended for most applications
+           
+        2. 'eigen': Eigenvalue decomposition of the covariance matrix
+           - More memory efficient for wide matrices (n_features >> n_samples)
+           - Potentially less stable for ill-conditioned problems
+           - Useful when n_samples << n_features
+           
+        The method stores the full decomposition in attributes:
+        - s_all: all singular values
+        - v_all: all POD modes (right singular vectors)
+        - coeffs: all POD coefficients (scaled left singular vectors)
         """
         if self.POD_algo == "svd":
             u, self.s_all, self.v_all = svd(y, full_matrices=False)
@@ -182,14 +407,40 @@ class PODImodelAbstract(ABC):
     ):
         """
         Validate the model using a train-test split.
-        Args:
-            x (np.ndarray): Input features.
-            y (np.ndarray): Target values.
-            training_ratio (float): Ratio of the training set.
-            rand_seed (int): Random seed for reproducibility.
-            norm (str): Type of norm to use for validation ('Frobenius' or 'inf').
-        Returns:
-            float: The calculated norm of the prediction error.
+
+        This method provides a convenient way to assess model performance by
+        automatically splitting the data, training the model, and computing
+        prediction errors on the test set.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features of shape (n_samples, n_input_features).
+        y : np.ndarray
+            Target values of shape (n_samples, n_output_features).
+        training_ratio : float, optional
+            Fraction of data to use for training (0 < training_ratio < 1).
+            Default is 0.8.
+        rand_seed : int, optional
+            Random seed for reproducible train-test splits. Default is 42.
+        norm : {'Frobenius', 'inf'}, optional
+            Type of norm to use for error calculation. Default is 'Frobenius'.
+
+        Returns
+        -------
+        float
+            The calculated norm of the prediction error on the test set.
+
+        Raises
+        ------
+        AssertionError
+            If an invalid norm type is specified.
+
+        Examples
+        --------
+        >>> model = SomeConcreteModel(rank=10)
+        >>> error = model.validate(X, Y, training_ratio=0.7, norm='Frobenius')
+        >>> print(f"Validation error: {error:.6f}")
         """
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=training_ratio, random_state=rand_seed
@@ -218,18 +469,48 @@ class PODImodelAbstract(ABC):
         is2D: bool = False,
     ):
         """
-        Reconstruct the model and write the results into a VTK file.
-        Args:
-            x (np.ndarray): Input features.
-            y (np.ndarray): Target values.
-            refVTMName (str): Name of the reference VTM file.
-            saveFileName (str): Name of the file to save the results.
-            dataType (str): Type of data to be written. E.g., 'Scalar' or 'Vector'.
-            x_train (np.ndarray, optional): Training input features. Defaults to None.
-            y_train (np.ndarray, optional): Training target values. Defaults to None.
-            x_test (np.ndarray, optional): Testing input features. Defaults to None.
-            y_test (np.ndarray, optional): Testing target values. Defaults to None.
-            is2D (bool): Whether the data is 2D or not.
+        Reconstruct the model predictions and save results to VTK files.
+
+        This method trains the model and generates VTK files containing the true values,
+        reconstructed values, and prediction errors for visualization and analysis.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features. Used for train-test split if specific splits not provided.
+        y : np.ndarray
+            Target values. Used for train-test split if specific splits not provided.
+        refVTMName : str
+            Path to the reference VTM file that provides the mesh structure.
+        saveFileName : str
+            Base filename for saving the reconstruction results.
+        dataType : {'scalar', 'vector'}
+            Type of data being reconstructed for VTK output.
+        x_train : np.ndarray, optional
+            Specific training input features. If None, automatic split is used.
+        y_train : np.ndarray, optional
+            Specific training target values. If None, automatic split is used.
+        x_test : np.ndarray, optional
+            Specific testing input features. If None, automatic split is used.
+        y_test : np.ndarray, optional
+            Specific testing target values. If None, automatic split is used.
+        is2D : bool, optional
+            Whether the data is 2D (for vector fields). Default is False.
+
+        Notes
+        -----
+        The method creates a VTK file with three sets of fields for each test sample:
+        - 'true_{i}': Original target values
+        - 'rec_{i}': Reconstructed/predicted values  
+        - 'err_{i}': Absolute error (true - predicted)
+        
+        If no specific train/test split is provided, the method uses an 80-20 split
+        with random_state=42.
+
+        Examples
+        --------
+        >>> model.reconstruct(X, Y, 'mesh.vtm', 'results', 'vector', is2D=True)
+        # Creates results.vtm with true, reconstructed, and error fields
         """
         if x_train is None or y_train is None or x_test is None or y_test is None:
             x_train, x_test, y_train, y_test = train_test_split(
@@ -265,16 +546,38 @@ class PODImodelAbstract(ABC):
         separate_err: bool = False,
     ):
         """
-        Validate the model with fixed training and testing data.
-        Args:
-            x_train (np.ndarray): Training input features.
-            y_train (np.ndarray): Training target values.
-            x_test (np.ndarray): Testing input features.
-            y_test (np.ndarray): Testing target values.
-            norm (str): Type of norm to use for validation ('Frobenius' or 'inf').
-            separate_err (bool): If True, return the error for each sample separately.
-        Returns:
-            float: The calculated norm of the prediction error.
+        Validate the model with fixed training and testing datasets.
+
+        This method allows for validation with predetermined train-test splits,
+        which is useful for consistent benchmarking and when specific data
+        partitioning is required.
+
+        Parameters
+        ----------
+        x_train : np.ndarray
+            Training input features of shape (n_train_samples, n_input_features).
+        y_train : np.ndarray
+            Training target values of shape (n_train_samples, n_output_features).
+        x_test : np.ndarray
+            Testing input features of shape (n_test_samples, n_input_features).
+        y_test : np.ndarray
+            Testing target values of shape (n_test_samples, n_output_features).
+        norm : {'Frobenius', 'inf'}, optional
+            Type of norm to use for error calculation. Default is 'Frobenius'.
+        separate_err : bool, optional
+            If True, return the error for each test sample separately.
+            If False, return the overall aggregated error. Default is False.
+
+        Returns
+        -------
+        float or np.ndarray
+            The calculated norm of the prediction error. If separate_err=True,
+            returns an array of errors for each test sample.
+
+        Raises
+        ------
+        AssertionError
+            If an invalid norm type is specified.
         """
         self.fit(x_train, y_train)
 
@@ -296,16 +599,49 @@ class PODImodelAbstract(ABC):
         norm: str = "Frobenius",
     ):
         """
-        Validate the model with multiple ranks.
-        Args:
-            x (np.ndarray): Input features.
-            y (np.ndarray): Target values.
-            ranks (list): List of ranks to validate.
-            training_ratio (float): Ratio of the training set.
-            rand_seed (int): Random seed for reproducibility.
-            norm (str): Type of norm to use for validation ('Frobenius' or 'inf').
-        Returns:
-            np.ndarray: Array of errors for each rank.
+        Validate the model performance across multiple POD ranks.
+
+        This method systematically evaluates model performance for different
+        numbers of POD modes, which is useful for determining the optimal
+        rank-accuracy trade-off.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features of shape (n_samples, n_input_features).
+        y : np.ndarray
+            Target values of shape (n_samples, n_output_features).
+        ranks : list of int
+            List of POD ranks to evaluate.
+        training_ratio : float, optional
+            Fraction of data to use for training. Default is 0.8.
+        rand_seed : int, optional
+            Random seed for reproducible train-test splits. Default is 42.
+        norm : {'Frobenius', 'inf'}, optional
+            Type of norm to use for error calculation. Default is 'Frobenius'.
+
+        Returns
+        -------
+        np.ndarray
+            Array of validation errors corresponding to each rank in the input list.
+
+        Raises
+        ------
+        AssertionError
+            If an invalid norm type is specified.
+
+        Notes
+        -----
+        The method uses the same train-test split for all ranks to ensure
+        fair comparison. The original rank setting is modified during the
+        process and should be reset if needed after calling this method.
+
+        Examples
+        --------
+        >>> ranks = [5, 10, 15, 20, 25]
+        >>> errors = model.multi_validate(X, Y, ranks, training_ratio=0.75)
+        >>> optimal_rank = ranks[np.argmin(errors)]
+        >>> print(f"Optimal rank: {optimal_rank}")
         """
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=training_ratio, random_state=rand_seed
@@ -334,17 +670,51 @@ class PODImodelAbstract(ABC):
         separate_err: bool = False,
     ):
         """
-        Validate the model with multiple ranks using fixed training and testing data.
-        Args:
-            x_train (np.ndarray): Training input features.
-            y_train (np.ndarray): Training target values.
-            x_test (np.ndarray): Testing input features.
-            y_test (np.ndarray): Testing target values.
-            ranks (list): List of ranks to validate.
-            norm (str): Type of norm to use for validation ('Frobenius' or 'inf').
-            separate_err (bool): If True, return the error for each sample separately.
-        Returns:
-            np.ndarray: Array of errors for each rank.
+        Validate the model across multiple POD ranks with fixed datasets.
+
+        This method combines the functionality of multi-rank validation with
+        fixed train-test splits, providing consistent evaluation across different
+        POD ranks using predetermined data partitions.
+
+        Parameters
+        ----------
+        x_train : np.ndarray
+            Training input features of shape (n_train_samples, n_input_features).
+        y_train : np.ndarray
+            Training target values of shape (n_train_samples, n_output_features).
+        x_test : np.ndarray
+            Testing input features of shape (n_test_samples, n_input_features).
+        y_test : np.ndarray
+            Testing target values of shape (n_test_samples, n_output_features).
+        ranks : list of int
+            List of POD ranks to evaluate.
+        norm : {'Frobenius', 'inf'}, optional
+            Type of norm to use for error calculation. Default is 'Frobenius'.
+        separate_err : bool, optional
+            If True, return the error for each test sample separately for each rank.
+            If False, return overall aggregated errors. Default is False.
+
+        Returns
+        -------
+        np.ndarray
+            Array of validation errors corresponding to each rank. Shape depends
+            on separate_err: if False, shape is (len(ranks),); if True, shape is
+            (len(ranks), n_test_samples).
+
+        Raises
+        ------
+        AssertionError
+            If an invalid norm type is specified.
+
+        Notes
+        -----
+        This method is particularly useful for:
+        - Systematic rank selection studies
+        - Benchmarking with consistent datasets
+        - Error analysis across different dimensionality reductions
+        
+        The original rank setting is modified during the process and should be
+        reset if needed after calling this method.
         """
         self.errors = []
         for i in ranks:

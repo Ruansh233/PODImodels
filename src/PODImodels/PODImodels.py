@@ -1,3 +1,52 @@
+"""
+POD-based Interpolation Models Implementation
+=============================================
+
+This module contains concrete implementations of POD-based interpolation models
+that inherit from PODImodelAbstract. These models combine Proper Orthogonal 
+Decomposition with various machine learning techniques for reduced-order modeling
+of high-dimensional field data.
+
+The models are categorized into two types:
+1. Direct field models (fields*): Learn direct mapping from parameters to field values
+2. POD coefficient models (POD*): Learn mapping from parameters to POD coefficients
+
+Available Models
+----------------
+Linear Regression Models:
+- fieldsLinear: Direct field prediction using linear regression
+- PODLinear: POD coefficient prediction using linear regression
+- fieldsRidge: Direct field prediction using Ridge regression  
+- PODRidge: POD coefficient prediction using Ridge regression
+
+Gaussian Process Regression Models:
+- fieldsGPR: Direct field prediction using Gaussian Process Regression
+- PODGPR: POD coefficient prediction using Gaussian Process Regression
+- fieldsRidgeGPR: Field prediction with Ridge regularization and GPR
+- PODRidgeGPR: POD coefficient prediction with Ridge regularization and GPR
+
+Radial Basis Function Models:
+- fieldsRBF: Direct field prediction using Radial Basis Function interpolation
+- PODRBF: POD coefficient prediction using Radial Basis Function interpolation
+- fieldsRidgeRBF: Field prediction with Ridge regularization and RBF
+- PODRidgeRBF: POD coefficient prediction with Ridge regularization and RBF
+
+Neural Network Models:
+- PODANN: POD coefficient prediction using Artificial Neural Networks
+
+Examples
+--------
+>>> # Gaussian Process Regression for POD coefficients
+>>> model = PODGPR(rank=15, with_scaler_x=True, with_scaler_y=True)
+>>> model.fit(parameters, field_snapshots)
+>>> predictions = model.predict(new_parameters)
+
+>>> # Direct field prediction with RBF
+>>> model = fieldsRBF(kernel='thin_plate_spline', degree=2)
+>>> model.fit(parameters, field_snapshots)
+>>> field_prediction = model.predict(test_parameters)
+"""
+
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
@@ -17,20 +66,79 @@ import random
 
 
 class fieldsLinear(PODImodelAbstract):
-    """A simple linear regression model for fields."""
+    """
+    Linear regression model for direct field prediction.
+
+    This model learns a direct linear mapping from input parameters to field values
+    without dimensionality reduction. It's suitable for problems where the full
+    field can be effectively approximated by linear combinations of the input parameters.
+
+    Parameters
+    ----------
+    **kwargs
+        Additional keyword arguments passed to the parent PODImodelAbstract class.
+        Common parameters include:
+        - rank : int, Number of POD modes (not used for direct field models)
+        - with_scaler_x : bool, Whether to scale input features
+        - with_scaler_y : bool, Whether to scale target values
+
+    Attributes
+    ----------
+    lin : LinearRegression
+        The underlying scikit-learn LinearRegression model.
+
+    Notes
+    -----
+    This model does not perform POD decomposition since it predicts fields directly.
+    It uses ordinary least squares to find the linear mapping: y = Xβ + ε.
+
+    Examples
+    --------
+    >>> model = fieldsLinear(with_scaler_x=True, with_scaler_y=True)
+    >>> model.fit(parameters, field_data)
+    >>> predictions = model.predict(new_parameters)
+    """
 
     def __init__(self, **kwargs):
         """
         Initialize the fieldsLinear model.
+
+        Parameters
+        ----------
+        **kwargs
+            Keyword arguments passed to parent PODImodelAbstract class.
         """
         super().__init__(**kwargs)
 
         self.lin = LinearRegression()
 
     def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+        """
+        Fit the linear regression model to the training data.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Preprocessed input features of shape (n_samples, n_features).
+        y : np.ndarray
+            Preprocessed target values of shape (n_samples, n_targets).
+        """
         self.lin.fit(x, y)
 
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
+        """
+        Make predictions using the trained linear model.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features for prediction.
+
+        Returns
+        -------
+        np.ndarray
+            Predicted field values with appropriate scaling applied.
+        """
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -40,20 +148,82 @@ class fieldsLinear(PODImodelAbstract):
 
 
 class PODLinear(PODImodelAbstract):
-    """A linear regression model for POD coefficients."""
+    """
+    Linear regression model for POD coefficient prediction.
+
+    This model performs POD decomposition to reduce the dimensionality of field data,
+    then learns a linear mapping from input parameters to POD coefficients. The final
+    field predictions are reconstructed by combining the predicted coefficients with
+    the POD modes.
+
+    Parameters
+    ----------
+    **kwargs
+        Additional keyword arguments passed to the parent PODImodelAbstract class.
+        Important parameters include:
+        - rank : int, Number of POD modes to retain
+        - with_scaler_x : bool, Whether to scale input features
+        - with_scaler_y : bool, Whether to scale POD coefficients
+        - POD_algo : str, POD algorithm ('svd' or 'eigen')
+
+    Attributes
+    ----------
+    lin : LinearRegression
+        The underlying scikit-learn LinearRegression model.
+
+    Notes
+    -----
+    This model first applies POD to reduce field data to coefficients, then uses
+    linear regression to learn the parameter-coefficient mapping. Field reconstruction
+    follows: y_pred = coeffs_pred @ modes, where modes are the POD basis functions.
+
+    Examples
+    --------
+    >>> model = PODLinear(rank=20, POD_algo='svd')
+    >>> model.fit(parameters, field_snapshots)
+    >>> field_predictions = model.predict(new_parameters)
+    """
 
     def __init__(self, **kwargs):
         """
         Initialize the PODLinear model.
+
+        Parameters
+        ----------
+        **kwargs
+            Keyword arguments passed to parent PODImodelAbstract class.
         """
         super().__init__(**kwargs)
 
         self.lin = LinearRegression()
 
     def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+        """
+        Fit the linear regression model to POD coefficients.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Preprocessed input features of shape (n_samples, n_features).
+        y : np.ndarray
+            Preprocessed POD coefficients of shape (n_samples, rank).
+        """
         self.lin.fit(x, y)
 
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
+        """
+        Predict field values by first predicting POD coefficients then reconstructing.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features for prediction.
+
+        Returns
+        -------
+        np.ndarray
+            Reconstructed field values with appropriate scaling applied.
+        """
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -109,7 +279,48 @@ class PODRidge(PODImodelAbstract):
 
 
 class fieldsGPR(PODImodelAbstract):
-    """A Gaussian Process Regression model for fields."""
+    """
+    Gaussian Process Regression model for direct field prediction.
+
+    This model applies Gaussian Process Regression directly to field data without
+    dimensionality reduction. It's particularly effective for problems with smooth
+    parameter-field relationships and when uncertainty quantification is important.
+
+    Parameters
+    ----------
+    kernel : sklearn.gaussian_process.kernels.Kernel, optional
+        The kernel specifying the covariance function for the GP. If None,
+        uses RBF kernel with fixed length scale. Default is None.
+    alpha : float, optional
+        Value added to the diagonal of the kernel matrix during fitting for
+        numerical stability. Represents the expected amount of noise in the
+        observations. Default is 1e-10.
+    **kwargs
+        Additional keyword arguments passed to the parent PODImodelAbstract class.
+
+    Attributes
+    ----------
+    kernel : sklearn.gaussian_process.kernels.Kernel
+        The covariance kernel for the Gaussian Process.
+    alpha : float
+        The noise regularization parameter.
+    gpr : GaussianProcessRegressor
+        The underlying scikit-learn Gaussian Process Regressor.
+
+    Notes
+    -----
+    GPR provides probabilistic predictions and can quantify uncertainty in
+    predictions. The computational complexity scales as O(n³) where n is the
+    number of training samples, making it more suitable for smaller datasets.
+
+    Examples
+    --------
+    >>> from sklearn.gaussian_process.kernels import RBF, Matern
+    >>> kernel = RBF(length_scale=1.0) + Matern(length_scale=2.0)
+    >>> model = fieldsGPR(kernel=kernel, alpha=1e-6)
+    >>> model.fit(parameters, field_data)
+    >>> predictions, std = model.gpr.predict(new_parameters, return_std=True)
+    """
 
     def __init__(
         self, kernel: Optional[Kernel] = None, alpha: float = 1.0e-10, **kwargs
@@ -117,9 +328,15 @@ class fieldsGPR(PODImodelAbstract):
         """
         Initialize the fieldsGPR model.
 
-        Args:
-            kernel (Optional[Kernel]): The kernel to use for the GPR.
-            alpha (float): The noise level for the GPR.
+        Parameters
+        ----------
+        kernel : sklearn.gaussian_process.kernels.Kernel, optional
+            The covariance kernel for the Gaussian Process. If None, uses
+            RBF kernel with fixed length scale.
+        alpha : float, optional
+            Noise regularization parameter. Default is 1e-10.
+        **kwargs
+            Additional arguments passed to parent class.
         """
         super().__init__(**kwargs)
 
@@ -131,10 +348,38 @@ class fieldsGPR(PODImodelAbstract):
         self.alpha = alpha
 
     def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+        """
+        Fit the Gaussian Process Regression model to the training data.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Preprocessed input features of shape (n_samples, n_features).
+        y : np.ndarray
+            Preprocessed target values of shape (n_samples, n_targets).
+        """
         self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
         self.gpr.fit(x, y)
 
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
+        """
+        Make predictions using the trained Gaussian Process model.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features for prediction.
+
+        Returns
+        -------
+        np.ndarray
+            Predicted field values with appropriate scaling applied.
+
+        Notes
+        -----
+        For uncertainty quantification, use self.gpr.predict(x, return_std=True)
+        directly after fitting the model.
+        """
         if self.with_scaler_x:
             x = self.scalar_X.transform(x)
         if self.with_scaler_y:
@@ -144,6 +389,59 @@ class fieldsGPR(PODImodelAbstract):
 
 
 class PODGPR(PODImodelAbstract):
+    """
+    Gaussian Process Regression model for POD coefficient prediction.
+
+    This model combines POD dimensionality reduction with Gaussian Process Regression.
+    It first applies POD to reduce field data to coefficients, then uses GPR to learn
+    the parameter-coefficient mapping. This approach is more computationally efficient
+    than direct field GPR for high-dimensional problems while preserving the
+    probabilistic nature of GP predictions.
+
+    Parameters
+    ----------
+    kernel : sklearn.gaussian_process.kernels.Kernel, optional
+        The covariance kernel for the Gaussian Process. If None, uses RBF kernel
+        with length scale bounds from 1e-3 to 1e3. Default is None.
+    alpha : float, optional
+        Noise regularization parameter for the GP. Default is 1e-10.
+    **kwargs
+        Additional keyword arguments passed to the parent PODImodelAbstract class.
+        Important parameters include:
+        - rank : int, Number of POD modes to retain
+        - POD_algo : str, POD algorithm ('svd' or 'eigen')
+
+    Attributes
+    ----------
+    kernel : sklearn.gaussian_process.kernels.Kernel
+        The covariance kernel for the Gaussian Process.
+    alpha : float
+        The noise regularization parameter.
+    gpr : GaussianProcessRegressor
+        The underlying scikit-learn Gaussian Process Regressor.
+
+    Notes
+    -----
+    This model offers several advantages:
+    - Computational efficiency through dimensionality reduction
+    - Uncertainty quantification for predictions  
+    - Automatic hyperparameter optimization via marginal likelihood
+    - Suitable for nonlinear parameter-field relationships
+
+    The computational complexity scales as O(n³r) where n is the number of training
+    samples and r is the POD rank, making it more efficient than direct field GPR.
+
+    Examples
+    --------
+    >>> from sklearn.gaussian_process.kernels import RBF, WhiteKernel
+    >>> kernel = RBF(length_scale=1.0) + WhiteKernel(noise_level=1e-5)
+    >>> model = PODGPR(rank=15, kernel=kernel, alpha=1e-8)
+    >>> model.fit(parameters, field_snapshots)
+    >>> predictions = model.predict(new_parameters)
+    >>> # Get uncertainty estimates
+    >>> coeffs_pred, coeffs_std = model.gpr.predict(new_parameters, return_std=True)
+    """
+
     def __init__(
         self,
         kernel: Optional[Kernel] = None,

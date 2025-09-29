@@ -216,7 +216,11 @@ class PODImodelAbstract(ABC):
         return self.predict_tmp(x)
 
     def frobenius_norm(
-        self, x: np.ndarray, y: np.ndarray, separate_err=False
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        separate_err=False,
+        lift_y: np.ndarray = None,
     ) -> np.ndarray:
         """
         Calculate the Frobenius norm of prediction errors.
@@ -233,6 +237,9 @@ class PODImodelAbstract(ABC):
         separate_err : bool, optional
             If True, return the error for each sample separately.
             If False, return the overall aggregated error. Default is False.
+        lift_y : np.ndarray, optional
+            If provided, this array is added to both true and predicted values
+            before error calculation. Default is None.
 
         Returns
         -------
@@ -251,10 +258,17 @@ class PODImodelAbstract(ABC):
         if separate_err:
             err = []
             y_pred = self.predict(x)
+            if lift_y is not None:
+                y_pred += lift_y
+                y += lift_y
             for i in range(len(x)):
                 err.append(np.linalg.norm(y[i] - y_pred[i]) / np.linalg.norm(y[i]))
             return np.array(err)
         else:
+            if lift_y is not None:
+                y_pred = self.predict(x) + lift_y
+                y = y + lift_y
+                return np.linalg.norm(y - y_pred) / np.linalg.norm(y)
             return np.linalg.norm(y - self.predict(x)) / np.linalg.norm(y)
 
     def inf_norm(self, x: np.ndarray, y: np.ndarray, separate_err=False) -> np.ndarray:
@@ -398,64 +412,6 @@ class PODImodelAbstract(ABC):
         else:
             raise ValueError("Invalid POD method.")
 
-    def validate(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        training_ratio: float = 0.8,
-        rand_seed: int = 42,
-        norm: str = "Frobenius",
-    ):
-        """
-        Validate the model using a train-test split.
-
-        This method provides a convenient way to assess model performance by
-        automatically splitting the data, training the model, and computing
-        prediction errors on the test set.
-
-        Parameters
-        ----------
-        x : np.ndarray
-            Input features of shape (n_samples, n_input_features).
-        y : np.ndarray
-            Target values of shape (n_samples, n_output_features).
-        training_ratio : float, optional
-            Fraction of data to use for training (0 < training_ratio < 1).
-            Default is 0.8.
-        rand_seed : int, optional
-            Random seed for reproducible train-test splits. Default is 42.
-        norm : {'Frobenius', 'inf'}, optional
-            Type of norm to use for error calculation. Default is 'Frobenius'.
-
-        Returns
-        -------
-        float
-            The calculated norm of the prediction error on the test set.
-
-        Raises
-        ------
-        AssertionError
-            If an invalid norm type is specified.
-
-        Examples
-        --------
-        >>> model = SomeConcreteModel(rank=10)
-        >>> error = model.validate(X, Y, training_ratio=0.7, norm='Frobenius')
-        >>> print(f"Validation error: {error:.6f}")
-        """
-        x_train, x_test, y_train, y_test = train_test_split(
-            x, y, train_size=training_ratio, random_state=rand_seed
-        )
-        self.fit(x_train, y_train)
-
-        if norm == "Frobenius":
-            return self.frobenius_norm(x_test, y_test)
-        elif norm == "inf":
-            return self.inf_norm(x_test, y_test)
-        else:
-            print("Please enter variable norm with value 'Frobenius' or 'inf'")
-            assert False
-
     def reconstruct(
         self,
         x: np.ndarray,
@@ -537,6 +493,80 @@ class PODImodelAbstract(ABC):
             is2D=is2D,
         )
 
+    def validate(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        training_ratio: float = 0.8,
+        rand_seed: int = 42,
+        norm: str = "Frobenius",
+        separate_err: bool = False,
+        lift_y: np.ndarray = None,
+    ):
+        """
+        Validate the model using a train-test split.
+
+        This method provides a convenient way to assess model performance by
+        automatically splitting the data, training the model, and computing
+        prediction errors on the test set.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input features of shape (n_samples, n_input_features).
+        y : np.ndarray
+            Target values of shape (n_samples, n_output_features).
+        training_ratio : float, optional
+            Fraction of data to use for training (0 < training_ratio < 1).
+            Default is 0.8.
+        rand_seed : int, optional
+            Random seed for reproducible train-test splits. Default is 42.
+        norm : {'Frobenius', 'inf'}, optional
+            Type of norm to use for error calculation. Default is 'Frobenius'.
+        separate_err : bool, optional
+            If True, return the error for each test sample separately.
+            If False, return the overall aggregated error. Default is False.
+        lift_y : np.ndarray, optional
+            If provided, this array is added to both true and predicted values
+            before error calculation. Default is None.
+
+        Returns
+        -------
+        float or np.ndarray
+            The calculated norm of the prediction error on the test set.
+            If separate_err=True, returns an array of errors for each test sample.
+            If separate_err=False, returns a single aggregated error value.
+
+        Raises
+        ------
+        AssertionError
+            If an invalid norm type is specified.
+
+        Examples
+        --------
+        >>> model = SomeConcreteModel(rank=10)
+        >>> error = model.validate(X, Y, training_ratio=0.7, norm='Frobenius')
+        >>> print(f"Validation error: {error:.6f}")
+        >>> # Using lifting to adjust predictions
+        >>> lift = np.mean(Y, axis=0)
+        >>> error_lifted = model.validate(X, Y, lift_y=lift, norm='inf')
+        >>> print(f"Validation error with lifting: {error_lifted:.6f}")
+        """
+        x_train, x_test, y_train, y_test = train_test_split(
+            x, y, train_size=training_ratio, random_state=rand_seed
+        )
+        self.fit(x_train, y_train)
+
+        if norm == "Frobenius":
+            return self.frobenius_norm(
+                x_test, y_test, lift_y=lift_y, separate_err=separate_err
+            )
+        elif norm == "inf":
+            return self.inf_norm(x_test, y_test, separate_err=separate_err)
+        else:
+            print("Please enter variable norm with value 'Frobenius' or 'inf'")
+            assert False
+
     def fixed_validate(
         self,
         x_train: np.ndarray,
@@ -545,6 +575,7 @@ class PODImodelAbstract(ABC):
         y_test: np.ndarray,
         norm: str = "Frobenius",
         separate_err: bool = False,
+        lift_y: np.ndarray = None,
     ):
         """
         Validate the model with fixed training and testing datasets.
@@ -568,6 +599,9 @@ class PODImodelAbstract(ABC):
         separate_err : bool, optional
             If True, return the error for each test sample separately.
             If False, return the overall aggregated error. Default is False.
+        lift_y : np.ndarray, optional
+            If provided, this array is added to both true and predicted values
+            before error calculation. Default is None.
 
         Returns
         -------
@@ -583,9 +617,11 @@ class PODImodelAbstract(ABC):
         self.fit(x_train, y_train)
 
         if norm == "Frobenius":
-            return self.frobenius_norm(x_test, y_test, separate_err)
+            return self.frobenius_norm(
+                x_test, y_test, separate_err=separate_err, lift_y=lift_y
+            )
         elif norm == "inf":
-            return self.inf_norm(x_test, y_test, separate_err)
+            return self.inf_norm(x_test, y_test, separate_err=separate_err)
         else:
             print("Please enter variable norm with value 'Frobenius' or 'inf'")
             assert False
@@ -598,6 +634,8 @@ class PODImodelAbstract(ABC):
         training_ratio: float = 0.8,
         rand_seed: int = 42,
         norm: str = "Frobenius",
+        separate_err: bool = False,
+        lift_y: np.ndarray = None,
     ):
         """
         Validate the model performance across multiple POD ranks.
@@ -620,6 +658,12 @@ class PODImodelAbstract(ABC):
             Random seed for reproducible train-test splits. Default is 42.
         norm : {'Frobenius', 'inf'}, optional
             Type of norm to use for error calculation. Default is 'Frobenius'.
+        separate_err : bool, optional
+            If True, return the error for each test sample separately for each rank.
+            If False, return overall aggregated errors. Default is False.
+        lift_y : np.ndarray, optional
+            If provided, this array is added to both true and predicted values
+            before error calculation. Default is None.
 
         Returns
         -------
@@ -652,9 +696,15 @@ class PODImodelAbstract(ABC):
             self.rank = i
             self.fit(x_train, y_train)
             if norm == "Frobenius":
-                self.errors.append(self.frobenius_norm(x_test, y_test))
+                self.errors.append(
+                    self.frobenius_norm(
+                        x_test, y_test, separate_err=separate_err, lift_y=lift_y
+                    )
+                )
             elif norm == "inf":
-                self.errors.append(self.inf_norm(x_test, y_test))
+                self.errors.append(
+                    self.inf_norm(x_test, y_test, separate_err=separate_err)
+                )
             else:
                 print("Please enter variable norm with value 'Frobenius' or 'inf'")
                 assert False
@@ -669,6 +719,7 @@ class PODImodelAbstract(ABC):
         ranks: list,
         norm: str = "Frobenius",
         separate_err: bool = False,
+        lift_y: np.ndarray = None,
     ):
         """
         Validate the model across multiple POD ranks with fixed datasets.
@@ -694,6 +745,9 @@ class PODImodelAbstract(ABC):
         separate_err : bool, optional
             If True, return the error for each test sample separately for each rank.
             If False, return overall aggregated errors. Default is False.
+        lift_y : np.ndarray, optional
+            If provided, this array is added to both true and predicted values
+            before error calculation. Default is None.
 
         Returns
         -------
@@ -722,28 +776,38 @@ class PODImodelAbstract(ABC):
             self.rank = i
             self.fit(x_train, y_train)
             if norm == "Frobenius":
-                self.errors.append(self.frobenius_norm(x_test, y_test, separate_err))
+                self.errors.append(
+                    self.frobenius_norm(
+                        x_test, y_test, separate_err=separate_err, lift_y=lift_y
+                    )
+                )
             elif norm == "inf":
-                self.errors.append(self.inf_norm(x_test, y_test, separate_err))
+                self.errors.append(
+                    self.inf_norm(x_test, y_test, separate_err=separate_err)
+                )
             else:
                 print("Please enter variable norm with value 'Frobenius' or 'inf'")
                 assert False
         return np.array(self.errors)
 
-    @staticmethod
-    def check_input(x: np.ndarray) -> np.ndarray:
+    def check_input(self, x: np.ndarray) -> np.ndarray:
+        tolerance = 0.5
+        list_warning = []
         for i in range(x.shape[0]):
             for j in range(x.shape[1]):
-                if x[i, j] > 1.1:
-                    x[i, j] = 1.1
-                    warnings.warn(
-                        f"The scaled input ({i}, {j}) is > 1.1. The value 1.1 will be used!",
-                        UserWarning,
-                    )
-                elif x[i, j] < -0.1:
-                    x[i, j] = -0.1
-                    warnings.warn(
-                        f"The scaled input ({i}, {j}) is < -0.1. The value -0.1 will be used!",
-                        UserWarning,
-                    )
+                if x[i, j] > 1 + tolerance:
+                    list_warning.append(np.array([i, j, x[i, j]]))
+                    x[i, j] = 1 + tolerance
+                elif x[i, j] < -tolerance:
+                    list_warning.append(np.array([i, j, x[i, j]]))
+                    x[i, j] = -tolerance
+
+        # if len(list_warning) > 0:
+        #     warnings.warn(
+        #         f"Some input features are out of the expected range [0, 1]. "
+        #         f"Values have been clipped to [-{tolerance}, {1 + tolerance}]. "
+        #         f"Details (sample index, feature index, original value): {list_warning}"
+        #     )
+
+        self.list_warning = list_warning
         return x

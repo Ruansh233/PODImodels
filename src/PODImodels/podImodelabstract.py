@@ -411,6 +411,29 @@ class PODImodelAbstract(ABC):
             print("POD_eigen reduction completed.")
         else:
             raise ValueError("Invalid POD method.")
+        
+    def truncation_error(self) -> float:
+        """
+        Calculate the truncation error of the POD decomposition.
+
+        This method computes the relative truncation error based on the singular
+        values obtained from the POD decomposition. The truncation error quantifies
+        the amount of information lost by retaining only a subset of the POD modes.
+
+        Returns
+        -------
+        float
+            The relative truncation error, defined as:
+            (sum of discarded singular values) / (sum of all singular values).
+        """
+        if not hasattr(self, "s_all") or not hasattr(self, "s"):
+            raise ValueError("POD decomposition has not been performed yet.")
+        total_energy = np.sum(self.s_all**2)
+        retained_energy = np.cumsum(self.s_all**2)
+        truncation_error = 1 - retained_energy / total_energy
+        projection_error = np.sqrt(truncation_error)
+
+        return truncation_error, projection_error
 
     def reconstruct(
         self,
@@ -691,24 +714,24 @@ class PODImodelAbstract(ABC):
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=training_ratio, random_state=rand_seed
         )
-        self.errors = []
+        errors = []
         for i in ranks:
             self.rank = i
             self.fit(x_train, y_train)
             if norm == "Frobenius":
-                self.errors.append(
+                errors.append(
                     self.frobenius_norm(
                         x_test, y_test, separate_err=separate_err, lift_y=lift_y
                     )
                 )
             elif norm == "inf":
-                self.errors.append(
+                errors.append(
                     self.inf_norm(x_test, y_test, separate_err=separate_err)
                 )
             else:
                 print("Please enter variable norm with value 'Frobenius' or 'inf'")
                 assert False
-        return np.array(self.errors)
+        return np.array(errors)
 
     def multi_validate_fixed(
         self,
@@ -771,24 +794,24 @@ class PODImodelAbstract(ABC):
         The original rank setting is modified during the process and should be
         reset if needed after calling this method.
         """
-        self.errors = []
+        errors = []
         for i in ranks:
             self.rank = i
             self.fit(x_train, y_train)
             if norm == "Frobenius":
-                self.errors.append(
+                errors.append(
                     self.frobenius_norm(
                         x_test, y_test, separate_err=separate_err, lift_y=lift_y
                     )
                 )
             elif norm == "inf":
-                self.errors.append(
+                errors.append(
                     self.inf_norm(x_test, y_test, separate_err=separate_err)
                 )
             else:
                 print("Please enter variable norm with value 'Frobenius' or 'inf'")
                 assert False
-        return np.array(self.errors)
+        return np.array(errors)
 
     def check_input(self, x: np.ndarray) -> np.ndarray:
         tolerance = 0.5

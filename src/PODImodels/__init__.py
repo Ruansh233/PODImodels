@@ -56,4 +56,3 @@ from .PODImodels import fieldsRBF, PODRBF
 from .PODImodels import fieldsRidgeRBF, PODRidgeRBF
 from .PODImodels import PODANN
 from .PODdata import vtk_writer, truncationErrorCal, PODDataSet, subdomainDataSet
-from .scaledrom import scaledROM

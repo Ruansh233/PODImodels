@@ -21,6 +21,7 @@ from sklearn.preprocessing import MinMaxScaler
 import pyvista as pv
 from .PODdata import vtk_writer
 from scipy.linalg import svd
+from typing import Optional, Union, Tuple, List
 
 
 class PODImodelAbstract(ABC):
@@ -100,7 +101,7 @@ class PODImodelAbstract(ABC):
     @abstractmethod
     def __init__(
         self,
-        rank=10,
+        rank: int = 10,
         with_scaler_x: bool = True,
         with_scaler_y: bool = True,
         POD_algo: str = "eigen",
@@ -119,13 +120,20 @@ class PODImodelAbstract(ABC):
         POD_algo : {'svd', 'eigen'}, optional
             The algorithm to use for POD computation. Default is 'eigen'.
         """
-        self.rank = rank
-        self.with_scaler_x = with_scaler_x
-        self.with_scaler_y = with_scaler_y
-        self.POD_algo = POD_algo
+        self.rank: int = rank
+        self.with_scaler_x: bool = with_scaler_x
+        self.with_scaler_y: bool = with_scaler_y
+        self.POD_algo: str = POD_algo
+        self.scalar_X: Optional[MinMaxScaler] = None
+        self.scalar_Y: Optional[MinMaxScaler] = None
+        self.v: Optional[np.ndarray] = None
+        self.v_all: Optional[np.ndarray] = None
+        self.s: Optional[np.ndarray] = None
+        self.s_all: Optional[np.ndarray] = None
+        self.coeffs: Optional[np.ndarray] = None
 
     @abstractmethod
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
         """
         Abstract method for model-specific fitting logic.
 
@@ -159,7 +167,7 @@ class PODImodelAbstract(ABC):
             Predicted values.
         """
 
-    def fit(self, x: np.ndarray, y: np.ndarray):
+    def fit(self, x: np.ndarray, y: np.ndarray) -> None:
         """
         Fit the model to the training data.
 
@@ -219,9 +227,9 @@ class PODImodelAbstract(ABC):
         self,
         x: np.ndarray,
         y: np.ndarray,
-        separate_err=False,
-        lift_y: np.ndarray = None,
-    ) -> np.ndarray:
+        separate_err: bool = False,
+        lift_y: Optional[np.ndarray] = None,
+    ) -> Union[float, np.ndarray]:
         """
         Calculate the Frobenius norm of prediction errors.
 
@@ -271,7 +279,9 @@ class PODImodelAbstract(ABC):
                 return np.linalg.norm(y - y_pred) / np.linalg.norm(y)
             return np.linalg.norm(y - self.predict(x)) / np.linalg.norm(y)
 
-    def inf_norm(self, x: np.ndarray, y: np.ndarray, separate_err=False) -> np.ndarray:
+    def inf_norm(
+        self, x: np.ndarray, y: np.ndarray, separate_err: bool = False
+    ) -> Union[float, np.ndarray]:
         """
         Calculate the infinity norm of prediction errors.
 
@@ -348,7 +358,7 @@ class PODImodelAbstract(ABC):
         self.v = self.v_all[: self.rank]
         return self.coeffs[:, : self.rank]
 
-    def reduction(self, y):
+    def reduction(self, y: np.ndarray) -> None:
         """
         Perform POD using the specified algorithm (SVD or eigenvalue decomposition).
 
@@ -411,8 +421,8 @@ class PODImodelAbstract(ABC):
             print("POD_eigen reduction completed.")
         else:
             raise ValueError("Invalid POD method.")
-        
-    def truncation_error(self) -> float:
+
+    def truncation_error(self) -> Tuple[float, float]:
         """
         Calculate the truncation error of the POD decomposition.
 
@@ -442,12 +452,12 @@ class PODImodelAbstract(ABC):
         refVTMName: str,
         saveFileName: str,
         dataType: str,
-        x_train: np.ndarray = None,
-        y_train: np.ndarray = None,
-        x_test: np.ndarray = None,
-        y_test: np.ndarray = None,
+        x_train: Optional[np.ndarray] = None,
+        y_train: Optional[np.ndarray] = None,
+        x_test: Optional[np.ndarray] = None,
+        y_test: Optional[np.ndarray] = None,
         is2D: bool = False,
-    ):
+    ) -> None:
         """
         Reconstruct the model predictions and save results to VTK files.
 
@@ -524,8 +534,8 @@ class PODImodelAbstract(ABC):
         rand_seed: int = 42,
         norm: str = "Frobenius",
         separate_err: bool = False,
-        lift_y: np.ndarray = None,
-    ):
+        lift_y: Optional[np.ndarray] = None,
+    ) -> Union[float, np.ndarray]:
         """
         Validate the model using a train-test split.
 
@@ -598,8 +608,8 @@ class PODImodelAbstract(ABC):
         y_test: np.ndarray,
         norm: str = "Frobenius",
         separate_err: bool = False,
-        lift_y: np.ndarray = None,
-    ):
+        lift_y: Optional[np.ndarray] = None,
+    ) -> Union[float, np.ndarray]:
         """
         Validate the model with fixed training and testing datasets.
 
@@ -653,13 +663,13 @@ class PODImodelAbstract(ABC):
         self,
         x: np.ndarray,
         y: np.ndarray,
-        ranks: list,
+        ranks: List[int],
         training_ratio: float = 0.8,
         rand_seed: int = 42,
         norm: str = "Frobenius",
         separate_err: bool = False,
-        lift_y: np.ndarray = None,
-    ):
+        lift_y: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         """
         Validate the model performance across multiple POD ranks.
 
@@ -725,9 +735,7 @@ class PODImodelAbstract(ABC):
                     )
                 )
             elif norm == "inf":
-                errors.append(
-                    self.inf_norm(x_test, y_test, separate_err=separate_err)
-                )
+                errors.append(self.inf_norm(x_test, y_test, separate_err=separate_err))
             else:
                 print("Please enter variable norm with value 'Frobenius' or 'inf'")
                 assert False
@@ -739,11 +747,11 @@ class PODImodelAbstract(ABC):
         y_train: np.ndarray,
         x_test: np.ndarray,
         y_test: np.ndarray,
-        ranks: list,
+        ranks: List[int],
         norm: str = "Frobenius",
         separate_err: bool = False,
-        lift_y: np.ndarray = None,
-    ):
+        lift_y: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         """
         Validate the model across multiple POD ranks with fixed datasets.
 
@@ -805,9 +813,7 @@ class PODImodelAbstract(ABC):
                     )
                 )
             elif norm == "inf":
-                errors.append(
-                    self.inf_norm(x_test, y_test, separate_err=separate_err)
-                )
+                errors.append(self.inf_norm(x_test, y_test, separate_err=separate_err))
             else:
                 print("Please enter variable norm with value 'Frobenius' or 'inf'")
                 assert False

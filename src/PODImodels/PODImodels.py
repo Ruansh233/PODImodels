@@ -50,7 +50,7 @@ Examples
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
-from typing import Optional
+from typing import Optional, List, Tuple, Union, Any
 from sklearn.gaussian_process.kernels import Kernel
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import LinearRegression
@@ -110,9 +110,9 @@ class fieldsLinear(PODImodelAbstract):
         """
         super().__init__(**kwargs)
 
-        self.lin = LinearRegression()
+        self.lin: LinearRegression = LinearRegression()
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
         """
         Fit the linear regression model to the training data.
 
@@ -196,9 +196,9 @@ class PODLinear(PODImodelAbstract):
         """
         super().__init__(**kwargs)
 
-        self.lin = LinearRegression()
+        self.lin: LinearRegression = LinearRegression()
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
         """
         Fit the linear regression model to POD coefficients.
 
@@ -243,9 +243,9 @@ class fieldsRidge(PODImodelAbstract):
         """
         super().__init__(**kwargs)
 
-        self.lin = Ridge()
+        self.lin: Ridge = Ridge()
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
         self.lin.fit(x, y)
 
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
@@ -267,9 +267,9 @@ class PODRidge(PODImodelAbstract):
         """
         super().__init__(**kwargs)
 
-        self.lin = Ridge()
+        self.lin: Ridge = Ridge()
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
         self.lin.fit(x, y)
 
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
@@ -327,10 +327,7 @@ class fieldsGPR(PODImodelAbstract):
     """
 
     def __init__(
-        self, 
-        kernel: Optional[Kernel] = None, 
-        alpha: float = 1.0e-10, 
-        **kwargs
+        self, kernel: Optional[Kernel] = None, alpha: float = 1.0e-10, **kwargs
     ):
         """
         Initialize the fieldsGPR model.
@@ -348,13 +345,13 @@ class fieldsGPR(PODImodelAbstract):
         super().__init__(**kwargs)
 
         if kernel is None:
-            self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
+            self.kernel: Kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
-            self.kernel = kernel
+            self.kernel: Kernel = kernel
 
-        self.alpha = alpha
+        self.alpha: float = alpha
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
         """
         Fit the Gaussian Process Regression model to the training data.
 
@@ -365,7 +362,9 @@ class fieldsGPR(PODImodelAbstract):
         y : np.ndarray
             Preprocessed target values of shape (n_samples, n_targets).
         """
-        self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
+        self.gpr: GaussianProcessRegressor = GaussianProcessRegressor(
+            kernel=self.kernel, alpha=self.alpha
+        )
         self.gpr.fit(x, y)
 
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
@@ -451,10 +450,7 @@ class PODGPR(PODImodelAbstract):
     """
 
     def __init__(
-        self, 
-        kernel: Optional[Kernel] = None, 
-        alpha: float = 1.0e-10, 
-        **kwargs
+        self, kernel: Optional[Kernel] = None, alpha: float = 1.0e-10, **kwargs
     ):
         """
         Initialize the PODGPR model.
@@ -466,13 +462,15 @@ class PODGPR(PODImodelAbstract):
         super().__init__(**kwargs)
 
         if kernel is None:
-            self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
+            self.kernel: Kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
-            self.kernel = kernel
-        self.alpha = alpha
+            self.kernel: Kernel = kernel
+        self.alpha: float = alpha
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
-        self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
+        self.gpr: GaussianProcessRegressor = GaussianProcessRegressor(
+            kernel=self.kernel, alpha=self.alpha
+        )
         self.gpr.fit(x, y)
 
     def predict_tmp(self, x: np.ndarray) -> np.ndarray:
@@ -487,10 +485,7 @@ class PODGPR(PODImodelAbstract):
 
 class fieldsRidgeGPR(PODImodelAbstract):
     def __init__(
-        self, 
-        kernel: Optional[Kernel] = None, 
-        alpha: float = 1.0e-10, 
-        **kwargs
+        self, kernel: Optional[Kernel] = None, alpha: float = 1.0e-10, **kwargs
     ):
         """
         Initialize the fieldsRidgeGPR model.
@@ -502,15 +497,17 @@ class fieldsRidgeGPR(PODImodelAbstract):
         super().__init__(**kwargs)
 
         if kernel is None:
-            self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
+            self.kernel: Kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
-            self.kernel = kernel
+            self.kernel: Kernel = kernel
 
-        self.alpha = alpha
+        self.alpha: float = alpha
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
-        self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
-        self.lin = Ridge()
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
+        self.gpr: GaussianProcessRegressor = GaussianProcessRegressor(
+            kernel=self.kernel, alpha=self.alpha
+        )
+        self.lin: Ridge = Ridge()
 
         self.lin.fit(x, y)
         self.gpr.fit(x, y - self.lin.predict(x))
@@ -529,10 +526,7 @@ class fieldsRidgeGPR(PODImodelAbstract):
 
 class PODRidgeGPR(PODImodelAbstract):
     def __init__(
-        self, 
-        kernel: Optional[Kernel] = None, 
-        alpha: float = 1.0e-10, 
-        **kwargs
+        self, kernel: Optional[Kernel] = None, alpha: float = 1.0e-10, **kwargs
     ):
         """
         Initialize the PODRidgeGPR model.
@@ -544,14 +538,16 @@ class PODRidgeGPR(PODImodelAbstract):
         super().__init__(**kwargs)
 
         if kernel is None:
-            self.kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
+            self.kernel: Kernel = RBF(length_scale=1.0e0, length_scale_bounds="fixed")
         else:
-            self.kernel = kernel
-        self.alpha = alpha
+            self.kernel: Kernel = kernel
+        self.alpha: float = alpha
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
-        self.gpr = GaussianProcessRegressor(kernel=self.kernel, alpha=self.alpha)
-        self.lin = Ridge()
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
+        self.gpr: GaussianProcessRegressor = GaussianProcessRegressor(
+            kernel=self.kernel, alpha=self.alpha
+        )
+        self.lin: Ridge = Ridge()
 
         self.lin.fit(x, y)
         self.gpr.fit(x, y - self.lin.predict(x))
@@ -574,7 +570,7 @@ class fieldsRBF(PODImodelAbstract):
         self,
         kernel: str = "linear",
         epsilon: float = 1.0,
-        neighbors: int = None,
+        neighbors: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -586,12 +582,12 @@ class fieldsRBF(PODImodelAbstract):
         """
         super().__init__(**kwargs)
 
-        self.kernel = kernel
-        self.epsilon = epsilon
-        self.neighbors = neighbors
+        self.kernel: str = kernel
+        self.epsilon: float = epsilon
+        self.neighbors: Optional[int] = neighbors
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
-        self.rbf = RBFInterpolator(
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
+        self.rbf: RBFInterpolator = RBFInterpolator(
             x, y, kernel=self.kernel, epsilon=self.epsilon, neighbors=self.neighbors
         )
 
@@ -610,7 +606,7 @@ class PODRBF(PODImodelAbstract):
         self,
         kernel: str = "linear",
         epsilon: float = 1.0,
-        neighbors: int = None,
+        neighbors: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -623,12 +619,12 @@ class PODRBF(PODImodelAbstract):
         """
         super().__init__(**kwargs)
 
-        self.kernel = kernel
-        self.epsilon = epsilon
-        self.neighbors = neighbors
+        self.kernel: str = kernel
+        self.epsilon: float = epsilon
+        self.neighbors: Optional[int] = neighbors
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
-        self.rbf = RBFInterpolator(
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
+        self.rbf: RBFInterpolator = RBFInterpolator(
             x, y, kernel=self.kernel, epsilon=self.epsilon, neighbors=self.neighbors
         )
 
@@ -648,7 +644,7 @@ class fieldsRidgeRBF(PODImodelAbstract):
         self,
         kernel: str = "linear",
         epsilon: float = 1.0,
-        neighbors: int = None,
+        neighbors: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -661,14 +657,14 @@ class fieldsRidgeRBF(PODImodelAbstract):
         """
         super().__init__(**kwargs)
 
-        self.kernel = kernel
-        self.epsilon = epsilon
-        self.lin = Ridge()
-        self.neighbors = neighbors
+        self.kernel: str = kernel
+        self.epsilon: float = epsilon
+        self.lin: Ridge = Ridge()
+        self.neighbors: Optional[int] = neighbors
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
         self.lin.fit(x, y)
-        self.rbf = RBFInterpolator(
+        self.rbf: RBFInterpolator = RBFInterpolator(
             x,
             y - self.lin.predict(x),
             kernel=self.kernel,
@@ -692,7 +688,7 @@ class PODRidgeRBF(PODImodelAbstract):
         self,
         kernel: str = "linear",
         epsilon: float = 1.0,
-        neighbors: int = None,
+        neighbors: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -705,14 +701,14 @@ class PODRidgeRBF(PODImodelAbstract):
         """
         super().__init__(**kwargs)
 
-        self.kernel = kernel
-        self.epsilon = epsilon
-        self.lin = Ridge()
-        self.neighbors = neighbors
+        self.kernel: str = kernel
+        self.epsilon: float = epsilon
+        self.lin: Ridge = Ridge()
+        self.neighbors: Optional[int] = neighbors
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
         self.lin.fit(x, y)
-        self.rbf = RBFInterpolator(
+        self.rbf: RBFInterpolator = RBFInterpolator(
             x,
             y - self.lin.predict(x),
             kernel=self.kernel,
@@ -743,7 +739,7 @@ class PODANN(PODImodelAbstract):
 
     def __init__(
         self,
-        hidden_layer_sizes: list = None,
+        hidden_layer_sizes: Optional[List[int]] = None,
         activation_function_name: str = "relu",
         activation_function: Optional[nn.Module] = None,
         learning_rate: float = 0.001,
@@ -780,21 +776,23 @@ class PODANN(PODImodelAbstract):
         """
         super().__init__(**kwargs)
 
-        self.hidden_layer_sizes = (
+        self.hidden_layer_sizes: Optional[List[int]] = (
             hidden_layer_sizes if hidden_layer_sizes is not None else [32, 16]
         )
-        self.activation_function_name = activation_function_name.lower()
-        self.activation_function = activation_function
-        self.learning_rate = learning_rate
-        self.loss_function_name = loss_function_name.lower()
-        self.optimizer_name = optimizer_name.lower()
-        self.num_epochs = num_epochs
-        self.stop_threshold = stop_threshold
-        self.random_seed = random_seed
-        self.with_weight = with_weight
+        self.activation_function_name: str = activation_function_name.lower()
+        self.activation_function: Optional[nn.Module] = activation_function
+        self.learning_rate: float = learning_rate
+        self.loss_function_name: str = loss_function_name.lower()
+        self.optimizer_name: str = optimizer_name.lower()
+        self.num_epochs: int = num_epochs
+        self.stop_threshold: float = stop_threshold
+        self.random_seed: int = random_seed
+        self.with_weight: bool = with_weight
 
         # Determine the device to use (GPU if available, otherwise CPU)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device: torch.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
         print(f"Using device: {self.device}")
         if self.device.type == "cuda":
             print(f"GPU Info: {torch.cuda.get_device_name(0)}")
@@ -802,12 +800,12 @@ class PODANN(PODImodelAbstract):
             print(f"CPU Info: {torch.get_num_threads()} threads")
 
         # Initialize model and scalers to None, they will be set during fit
-        self.model = None
+        self.model: Optional[nn.Sequential] = None
 
         # Set random seed for reproducibility
         self._set_all_seeds()
 
-    def _get_activation_function(self):
+    def _get_activation_function(self) -> nn.Module:
         if (
             self.activation_function is not None
             and self.activation_function_name is not None
@@ -838,7 +836,7 @@ class PODANN(PODImodelAbstract):
                     f"Unsupported activation function: {self.activation_function_name}"
                 )
 
-    def _get_loss_function(self):
+    def _get_loss_function(self) -> nn.Module:
         """Returns the PyTorch loss function module based on its name."""
         if self.loss_function_name == "mse":
             if self.with_weight:
@@ -850,7 +848,7 @@ class PODANN(PODImodelAbstract):
         else:
             raise ValueError(f"Unsupported loss function: {self.loss_function_name}")
 
-    def _get_optimizer(self, model_parameters):
+    def _get_optimizer(self, model_parameters) -> optim.Optimizer:
         """Returns the PyTorch optimizer based on its name and model parameters."""
         if self.optimizer_name == "adam":
             return optim.Adam(model_parameters, lr=self.learning_rate)
@@ -859,7 +857,7 @@ class PODANN(PODImodelAbstract):
         else:
             raise ValueError(f"Unsupported optimizer: {self.optimizer_name}")
 
-    def _build_model(self, input_dim: int, output_dim: int):
+    def _build_model(self, input_dim: int, output_dim: int) -> None:
         """
         Builds the neural network model dynamically based on specified hidden layers.
 
@@ -884,7 +882,7 @@ class PODANN(PODImodelAbstract):
         print(self.model)
         print("--------------------------\n")
 
-    def _set_all_seeds(self):
+    def _set_all_seeds(self) -> None:
         """
         Sets the random seed for reproducibility across different libraries.
         """
@@ -901,7 +899,7 @@ class PODANN(PODImodelAbstract):
             torch.backends.cudnn.benchmark = False
             print(f"CUDA deterministic set to {torch.backends.cudnn.deterministic}")
 
-    def fit_tmp(self, x: np.ndarray, y: np.ndarray):
+    def fit_tmp(self, x: np.ndarray, y: np.ndarray) -> None:
         """
         Trains the neural network model.
 
@@ -928,12 +926,12 @@ class PODANN(PODImodelAbstract):
         # Compute loss
         if self.with_weight:
             # set coefficient_weights for weighted loss as the singular values from POD
-            self.coefficient_weights = self.s
+            self.coefficient_weights: np.ndarray = self.s
             if len(self.coefficient_weights) != output_dim:
                 raise ValueError(
                     f"Length of coefficient_weights ({len(self.coefficient_weights)}) must match output_dim ({output_dim})."
                 )
-            weights_tensor = torch.tensor(
+            weights_tensor: torch.Tensor = torch.tensor(
                 self.coefficient_weights, dtype=torch.float32
             ).to(self.device)
             # Ensure weights are positive
@@ -1018,7 +1016,9 @@ class PODANN(PODImodelAbstract):
             x = self.check_input(x)
 
         # Convert to PyTorch tensor
-        X_test_tensor = torch.tensor(x, dtype=torch.float32).to(self.device)
+        X_test_tensor: torch.Tensor = torch.tensor(x, dtype=torch.float32).to(
+            self.device
+        )
 
         with torch.no_grad():  # Disable gradient calculation during inference
             predictions = self.model(X_test_tensor).cpu().numpy()

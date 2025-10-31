@@ -2,9 +2,9 @@
 POD Data Processing and Utilities
 ==================================
 
-This module provides classes and functions for handling Proper Orthogonal 
+This module provides classes and functions for handling Proper Orthogonal
 Decomposition (POD) of datasets, particularly for computational fluid dynamics
-field data. It includes utilities for VTK file writing and POD-based 
+field data. It includes utilities for VTK file writing and POD-based
 dimensionality reduction.
 
 Classes
@@ -25,7 +25,7 @@ truncationErrorCal
 import numpy as np
 from scipy.linalg import svd
 import pyvista as pv
-from typing import List
+from typing import List, Optional
 
 
 # def vtk_writer(
@@ -65,6 +65,7 @@ from typing import List
 #     # Save the modified VTM file
 #     output_vtm_file_path = f"{save_path_name}.vtm"
 #     refVTM.save(output_vtm_file_path)
+
 
 def vtk_writer(
     field_data: List[np.ndarray],
@@ -115,7 +116,7 @@ def vtk_writer(
     >>> field_data = [pressure_field, temperature_field]
     >>> field_names = ['pressure', 'temperature']
     >>> vtk_writer(field_data, field_names, 'scalar', 'mesh.vtm', 'output')
-    
+
     >>> # Write 2D vector field data
     >>> field_data = [velocity_2d]
     >>> field_names = ['velocity']
@@ -133,7 +134,7 @@ def vtk_writer(
 
         # Check if we have enough data for this block's fields
         num_fields_per_block = len(field_name)
-        
+
         if data_type == "scalar":
             for i in range(num_fields_per_block):
                 block.cell_data[field_name[i]] = field_data[field_data_idx]
@@ -178,7 +179,7 @@ def truncationErrorCal(singulars):
     Parameters
     ----------
     singulars : np.ndarray
-        Array of singular values from SVD decomposition, typically in 
+        Array of singular values from SVD decomposition, typically in
         descending order.
 
     Returns
@@ -191,7 +192,7 @@ def truncationErrorCal(singulars):
     -----
     The truncation error is calculated as:
     error[i] = 1 - sqrt(sum(σ²[0:i+1])) / ||σ||₂
-    
+
     where σ are the singular values and ||σ||₂ is the Frobenius norm.
 
     Examples
@@ -251,20 +252,25 @@ class PODDataSet:
     >>> pod = PODDataSet(data, rank=5, fullData=True)
     >>> print(f"POD modes shape: {pod.cell_modes.shape}")
     >>> print(f"Truncation error at rank 5: {pod.truncationError()[4]:.4f}")
-    
+
     >>> # Save POD modes to VTK file
     >>> pod.saveModes('pod_modes', 'reference.vtm', 'vector', rank=5)
     """
 
-    def __init__(self, data, rank=10, fullData=True):
-        self.data = data
-        self.rank = rank
-        self.fullData = fullData
+    def __init__(self, data: np.ndarray, rank: int = 10, fullData: bool = True) -> None:
+        self.data: np.ndarray = data
+        self.rank: int = rank
+        self.fullData: bool = fullData
+
+        # Optional attributes set in POD method
+        self.cell_modes_all: Optional[np.ndarray] = None
+        self.singulars_all: Optional[np.ndarray] = None
+        self.cell_coeffs_all: Optional[np.ndarray] = None
 
         self.printInfo()
         self.POD()
 
-    def POD(self):
+    def POD(self) -> None:
         """
         Perform Singular Value Decomposition to compute POD modes and coefficients.
 
@@ -281,14 +287,14 @@ class PODDataSet:
         - singulars = Σ (singular values)
         """
         s, vh = svd(self.data, full_matrices=False)[1:]
-        self.cell_modes = vh[: self.rank]
-        self.cell_coeffs = self.data @ vh[: self.rank].T
-        self.singulars = s[: self.rank]
+        self.cell_modes: np.ndarray = vh[: self.rank]
+        self.cell_coeffs: np.ndarray = self.data @ vh[: self.rank].T
+        self.singulars: np.ndarray = s[: self.rank]
 
         if self.fullData:
-            self.cell_modes_all = vh
-            self.singulars_all = s
-            self.cell_coeffs_all = self.data @ vh.T
+            self.cell_modes_all: np.ndarray = vh
+            self.singulars_all: np.ndarray = s
+            self.cell_coeffs_all: np.ndarray = self.data @ vh.T
 
     def truncationError(self):
         """
@@ -307,15 +313,22 @@ class PODDataSet:
         """
         return truncationErrorCal(self.singulars_all)
 
-    def printInfo(self):
+    def printInfo(self) -> None:
         """
         Print information about the POD configuration.
-        
+
         Displays the rank parameter used for the POD decomposition.
         """
         print("The POD rank is: ", self.rank)
 
-    def saveModes(self, saveFileName, refVTMName, dataType, rank=10, is2D=False):
+    def saveModes(
+        self,
+        saveFileName: str,
+        refVTMName: str,
+        dataType: str,
+        rank: int = 10,
+        is2D: bool = False,
+    ) -> None:
         """
         Save POD modes to VTK files along with singular values and truncation errors.
 
@@ -412,20 +425,33 @@ class subdomainDataSet:
     """
 
     def __init__(
-        self, cell_data, patch_data, cell_rank=10, patch_rank=5, cal_fullData=True
-    ):
-        self.cell_data = cell_data
-        self.patch_data = patch_data
-        self.cell_rank = cell_rank
-        self.patch_rank = patch_rank
-        self.cal_fullData = cal_fullData
+        self,
+        cell_data: np.ndarray,
+        patch_data: np.ndarray,
+        cell_rank: int = 10,
+        patch_rank: int = 5,
+        cal_fullData: bool = True,
+    ) -> None:
+        self.cell_data: np.ndarray = cell_data
+        self.patch_data: np.ndarray = patch_data
+        self.cell_rank: int = cell_rank
+        self.patch_rank: int = patch_rank
+        self.cal_fullData: bool = cal_fullData
+
+        # Optional attributes
+        self.cell_modes_all: Optional[np.ndarray] = None
+        self.singulars_all: Optional[np.ndarray] = None
+        self.cell_coeffs_all: Optional[np.ndarray] = None
+        self.patch_modes_all: Optional[np.ndarray] = None
+        self.patch_coeffs_all: Optional[np.ndarray] = None
+        self.patch_singulars_all: Optional[np.ndarray] = None
 
         self.printInfo()
         self.cellPOD()
         self.patchPOD()
         self.calculate_projPatch_modes()
 
-    def cellPOD(self):
+    def cellPOD(self) -> None:
         """
         Perform POD on the cell/volume data.
 
@@ -434,16 +460,16 @@ class subdomainDataSet:
         are stored based on the cal_fullData flag.
         """
         s, vh = svd(self.cell_data, full_matrices=False)[1:]
-        self.cell_modes = vh[: self.cell_rank]
-        self.cell_coeffs = self.cell_data @ vh[: self.cell_rank].T
-        self.singulars = s[: self.cell_rank]
+        self.cell_modes: np.ndarray = vh[: self.cell_rank]
+        self.cell_coeffs: np.ndarray = self.cell_data @ vh[: self.cell_rank].T
+        self.singulars: np.ndarray = s[: self.cell_rank]
 
         if self.cal_fullData:
-            self.cell_modes_all = vh
-            self.singulars_all = s
-            self.cell_coeffs_all = self.cell_data @ vh.T
+            self.cell_modes_all: np.ndarray = vh
+            self.singulars_all: np.ndarray = s
+            self.cell_coeffs_all: np.ndarray = self.cell_data @ vh.T
 
-    def calculate_projPatch_modes(self):
+    def calculate_projPatch_modes(self) -> None:
         """
         Calculate the projection of patch modes onto the cell coefficient space.
 
@@ -452,7 +478,7 @@ class subdomainDataSet:
         The projection is computed as: (Σ⁻²) @ (Uᶜᵀ @ Xᵖ), where Σ are the cell
         singular values, Uᶜ are the cell coefficients, and Xᵖ is the patch data.
         """
-        self.projPatch_modes = np.diag(np.power(self.singulars, -2)) @ (
+        self.projPatch_modes: np.ndarray = np.diag(np.power(self.singulars, -2)) @ (
             self.cell_coeffs.T @ self.patch_data
         )
 
@@ -468,7 +494,7 @@ class subdomainDataSet:
         """
         return truncationErrorCal(self.singulars_all)
 
-    def patchPOD(self):
+    def patchPOD(self) -> None:
         """
         Perform POD on the patch/boundary data.
 
@@ -477,19 +503,19 @@ class subdomainDataSet:
         are stored based on the cal_fullData flag.
         """
         s, vh = svd(self.patch_data, full_matrices=False)[1:]
-        self.patch_modes = vh[: self.patch_rank]
-        self.patch_coeffs = self.patch_data @ vh[: self.patch_rank].T
-        self.patch_singulars = s[: self.patch_rank]
+        self.patch_modes: np.ndarray = vh[: self.patch_rank]
+        self.patch_coeffs: np.ndarray = self.patch_data @ vh[: self.patch_rank].T
+        self.patch_singulars: np.ndarray = s[: self.patch_rank]
 
         if self.cal_fullData:
-            self.patch_modes_all = vh
-            self.patch_coeffs_all = self.patch_data @ vh.T
-            self.patch_singulars_all = s
+            self.patch_modes_all: np.ndarray = vh
+            self.patch_coeffs_all: np.ndarray = self.patch_data @ vh.T
+            self.patch_singulars_all: np.ndarray = s
 
-    def printInfo(self):
+    def printInfo(self) -> None:
         """
         Print information about the subdomain POD configuration.
-        
+
         Displays the rank parameters used for both cell and patch POD decompositions.
         """
         print("The cell POD rank is: ", self.cell_rank)

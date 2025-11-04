@@ -37,6 +37,8 @@ Examples
 
 __all__ = [
     "PODImodelAbstract",
+    "fieldsLinear",
+    "fieldsRidge",
     "fieldsGPR",
     "PODGPR",
     "fieldsRidgeGPR",
@@ -50,6 +52,7 @@ __all__ = [
 ]
 
 from .podImodelabstract import PODImodelAbstract
+from .PODImodels import fieldsLinear, fieldsRidge
 from .PODImodels import fieldsGPR, PODGPR
 from .PODImodels import fieldsRidgeGPR, PODRidgeGPR
 from .PODImodels import fieldsRBF, PODRBF

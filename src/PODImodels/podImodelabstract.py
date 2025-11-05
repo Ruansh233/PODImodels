@@ -831,12 +831,12 @@ class PODImodelAbstract(ABC):
                     list_warning.append(np.array([i, j, x[i, j]]))
                     x[i, j] = -tolerance
 
-        # if len(list_warning) > 0:
-        #     warnings.warn(
-        #         f"Some input features are out of the expected range [0, 1]. "
-        #         f"Values have been clipped to [-{tolerance}, {1 + tolerance}]. "
-        #         f"Details (sample index, feature index, original value): {list_warning}"
-        #     )
+        if len(list_warning) > 0:
+            warnings.warn(
+                f"Some input features are out of the expected range [0, 1]. "
+                f"Values have been clipped to [-{tolerance}, {1 + tolerance}]. "
+                f"Details (sample index, feature index, original value): {list_warning}"
+            )
 
         self.list_warning = list_warning
         return x

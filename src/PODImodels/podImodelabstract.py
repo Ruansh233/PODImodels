@@ -833,9 +833,7 @@ class PODImodelAbstract(ABC):
 
         # if len(list_warning) > 0:
         #     warnings.warn(
-        #         f"Some input features are out of the expected range [0, 1]. "
-        #         f"Values have been clipped to [-{tolerance}, {1 + tolerance}]. "
-        #         f"Details (sample index, feature index, original value): {list_warning}"
+        #         f"{len(list_warning)} input features are out of the expected range [0, 1]. "
         #     )
 
         self.list_warning = list_warning

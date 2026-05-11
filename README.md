@@ -142,14 +142,91 @@ from PODImodels import PODANN
 # Initialize ANN model
 model = PODANN(
     rank=15,
-    hidden_layers=[64, 32],
-    activation='relu',
-    epochs=100
+    hidden_layer_sizes=[64, 32],
+    activation_function_name='relu',
+    num_epochs=100
 )
 
 model.fit(X_train, Y_train)
 Y_pred = model.predict(X_test)
 ```
+
+## Writing Results to VTK
+
+PODImodels includes built-in helpers to export fields and reconstructions to VTK
+(`.vtm`) so you can visualize results in ParaView or PyVista.
+
+### 1) Export true/reconstructed/error fields directly from a model
+
+Use `reconstruct(...)` to write:
+- `true_i` (reference field)
+- `rec_i` (predicted field)
+- `err_i` (difference field)
+
+```python
+from PODImodels import PODGPR
+import numpy as np
+
+X = np.load("parameters.npy")  # (n_samples, n_params)
+Y = np.load("fields.npy")      # (n_samples, n_points) or flattened vectors
+
+model = PODGPR(rank=20, with_scaler_x=True, with_scaler_y=True)
+model.reconstruct(
+    x=X,
+    y=Y,
+    refVTMName="reference_mesh.vtm",   # mesh topology/template
+    saveFileName="reconstruction_case",# writes reconstruction_case.vtm
+    dataType="scalar",                 # or "vector"
+    is2D=False,                        # set True for 2D vectors
+)
+```
+
+### 2) Export POD modes to VTK
+
+If you want to inspect POD basis modes:
+
+```python
+from PODImodels import PODDataSet
+import numpy as np
+
+Y = np.load("fields.npy")
+pod = PODDataSet(Y, rank=20, fullData=True)
+
+pod.saveModes(
+    saveFileName="pod_modes",
+    refVTMName="reference_mesh.vtm",
+    dataType="scalar",  # or "vector"
+    rank=10,
+    is2D=False,
+)
+```
+
+This writes:
+- `pod_modes.vtm`
+- `pod_modes_truncationError.txt`
+- `pod_modes_singulars.txt`
+
+### 3) Low-level VTK writing helper
+
+For full control, call `vtk_writer(...)` directly:
+
+```python
+from PODImodels import vtk_writer
+
+vtk_writer(
+    field_data=[field_0, field_1],     # one array per output field
+    field_name=["prediction_0", "prediction_1"],
+    data_type="scalar",                # or "vector"
+    refVTMName="reference_mesh.vtm",
+    save_path_name="custom_output",    # writes custom_output.vtm
+    is2D=False,
+)
+```
+
+Notes:
+- `refVTMName` must point to a valid reference `.vtm` mesh.
+- Use `dataType/data_type="vector"` for vector fields.
+- For 2D vector data, set `is2D=True` to append a zero z-component for VTK compatibility.
 
 ## Model Selection Guide
 

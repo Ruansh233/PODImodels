@@ -1,4 +1,5 @@
 import importlib.util
+import os
 import sys
 from pathlib import Path
 
@@ -86,6 +87,52 @@ def test_load_foam_to_python_missing_dependency(monkeypatch):
     monkeypatch.setattr(mod.importlib, "import_module", _fake_import)
     with pytest.raises(RuntimeError, match="Missing optional dependency 'foamToPython'"):
         mod.load_foam_to_python()
+
+
+def test_resolve_case_source_requires_openfoam_tutorials_or_explicit_path(monkeypatch):
+    mod = _load_benchmark_module()
+    monkeypatch.delenv("FOAM_TUTORIALS", raising=False)
+
+    with pytest.raises(FileNotFoundError, match="FOAM_TUTORIALS"):
+        mod.resolve_case_source(None)
+
+
+def test_resolve_case_source_uses_foam_tutorials(monkeypatch, tmp_path):
+    mod = _load_benchmark_module()
+    tutorial_case = tmp_path / "incompressible" / "icoFoam" / "cavity" / "cavity"
+    tutorial_case.mkdir(parents=True)
+    monkeypatch.setenv("FOAM_TUTORIALS", os.fspath(tmp_path))
+
+    assert mod.resolve_case_source(None) == tutorial_case
+
+
+def test_check_openfoam_available_warns_when_not_sourced(monkeypatch):
+    mod = _load_benchmark_module()
+    monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+
+    with pytest.warns(RuntimeWarning, match="Install OpenFOAM or source"):
+        with pytest.raises(RuntimeError, match="OpenFOAM is not available"):
+            mod.check_openfoam_available()
+
+
+def test_check_openfoam_available_accepts_sourced_openfoam(monkeypatch):
+    mod = _load_benchmark_module()
+    monkeypatch.setattr(mod.shutil, "which", lambda name: f"/usr/bin/{name}")
+
+    mod.check_openfoam_available()
+
+
+def test_openfoam_command_runs_directly(monkeypatch, tmp_path):
+    mod = _load_benchmark_module()
+    calls = []
+
+    def _fake_run(cmd, cwd, check):
+        calls.append((cmd, cwd, check))
+
+    monkeypatch.setattr(mod.subprocess, "run", _fake_run)
+    mod.run_openfoam_command(["blockMesh"], cwd=tmp_path)
+
+    assert calls == [(["blockMesh"], os.fspath(tmp_path), True)]
 
 
 def test_benchmark_models_rows_and_metrics():

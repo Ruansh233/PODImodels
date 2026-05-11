@@ -1,11 +1,12 @@
 # OpenFOAM Cavity Benchmark
 
 This example benchmarks `PODImodels` models on snapshots generated from the
-OpenFOAM v2312 lid-driven cavity tutorial.
+OpenFOAM lid-driven cavity tutorial.
 
 ## Prerequisites
 
-- OpenFOAM v2312 installed and activatable via `of_2312`
+- OpenFOAM installed with `foamCloneCase`, `blockMesh`, and `icoFoam`
+  available after sourcing your OpenFOAM environment
 - Python environment with project dependencies
 - Optional dependency for OpenFOAM I/O:
 
@@ -18,6 +19,7 @@ uv sync --extra openfoam
 From the repository root:
 
 ```bash
+source /path/to/OpenFOAM/etc/bashrc
 uv run python examples/openfoam_cavity/benchmark_cavity_models.py --force
 ```
 
@@ -25,7 +27,6 @@ Useful options:
 
 ```bash
 uv run python examples/openfoam_cavity/benchmark_cavity_models.py \
-  --openfoam-activate of_2312 \
   --lid-velocities 0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6 \
   --viscosities 0.0025,0.005,0.01,0.02 \
   --snapshot-mode all \
@@ -56,8 +57,8 @@ Generated cases and benchmark outputs are ignored by git:
 - `ModuleNotFoundError: foamToPython`:
   install the optional extra with `uv sync --extra openfoam`.
 - `Case source not found`:
-  ensure `$FOAM_TUTORIALS` is set by your OpenFOAM environment or that the
-  fallback path exists.
+  ensure `$FOAM_TUTORIALS` is set by your OpenFOAM environment, or pass
+  `--case-source /path/to/tutorial/cavity`.
 - OpenFOAM command failures:
-  verify `of_2312` works in your shell and required binaries (`foamCloneCase`,
-  `blockMesh`, `icoFoam`) are available.
+  install OpenFOAM or source your OpenFOAM environment before running. Required
+  binaries are `foamCloneCase`, `blockMesh`, and `icoFoam`.

@@ -12,8 +12,9 @@ import re
 import shutil
 import subprocess
 import time
+import warnings
 from pathlib import Path
-from typing import Callable, Dict, Iterable, List, Tuple
+from typing import Callable, Dict, Iterable, List, Sequence, Tuple
 
 import numpy as np
 
@@ -33,9 +34,8 @@ from PODImodels import (
     fieldsRidgeRBF,
 )
 
-DEFAULT_CASE_FALLBACK = Path(
-    "/home/ruan/software/OpenFOAM/OpenFOAM-v2312/tutorials/incompressible/icoFoam/cavity/cavity"
-)
+OPENFOAM_TUTORIAL_CASE = Path("incompressible/icoFoam/cavity/cavity")
+OPENFOAM_REQUIRED_COMMANDS = ("foamCloneCase", "blockMesh", "icoFoam")
 RESULT_COLUMNS = [
     "model",
     "relative_frobenius_error",
@@ -60,7 +60,6 @@ def parse_args() -> argparse.Namespace:
         default=Path("examples/openfoam_cavity/results"),
     )
     parser.add_argument("--case-source", type=Path, default=None)
-    parser.add_argument("--openfoam-activate", default="of_2312")
     parser.add_argument(
         "--lid-velocities",
         default="0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6",
@@ -103,23 +102,41 @@ def load_foam_to_python():
 
 def resolve_case_source(case_source: Path | None) -> Path:
     if case_source is not None:
-        return case_source
+        return case_source.expanduser()
     tutorials = os.environ.get("FOAM_TUTORIALS")
     if tutorials:
-        candidate = Path(tutorials) / "incompressible/icoFoam/cavity/cavity"
+        candidate = Path(tutorials) / OPENFOAM_TUTORIAL_CASE
         if candidate.exists():
             return candidate
-    return DEFAULT_CASE_FALLBACK
+        raise FileNotFoundError(
+            f"OpenFOAM cavity tutorial not found at {candidate}. "
+            "Pass --case-source or check FOAM_TUTORIALS."
+        )
+    raise FileNotFoundError(
+        "OpenFOAM case source not found. Source your OpenFOAM environment so "
+        "FOAM_TUTORIALS is set, or pass --case-source."
+    )
+
+
+def check_openfoam_available() -> None:
+    missing = [cmd for cmd in OPENFOAM_REQUIRED_COMMANDS if shutil.which(cmd) is None]
+    if not missing:
+        return
+    message = (
+        "OpenFOAM is not available in this shell. Install OpenFOAM or source "
+        "your OpenFOAM environment before running this example. Missing commands: "
+        f"{', '.join(missing)}."
+    )
+    warnings.warn(message, RuntimeWarning, stacklevel=2)
+    raise RuntimeError(message)
 
 
 def run_openfoam_command(
-    command: str,
-    activate_cmd: str,
+    command: Sequence[str],
     cwd: Path | None = None,
 ) -> None:
-    full_cmd = f"{activate_cmd} && {command}"
     subprocess.run(
-        ["zsh", "-ic", full_cmd],
+        list(command),
         cwd=None if cwd is None else str(cwd),
         check=True,
     )
@@ -158,7 +175,6 @@ def prepare_case_for_parameters(
     case_dir: Path,
     lid_velocity: float,
     viscosity: float,
-    activate_cmd: str,
     force: bool,
 ) -> None:
     if case_dir.exists():
@@ -169,8 +185,7 @@ def prepare_case_for_parameters(
         shutil.rmtree(case_dir)
     case_dir.parent.mkdir(parents=True, exist_ok=True)
     run_openfoam_command(
-        f"foamCloneCase {case_source} {case_dir}",
-        activate_cmd=activate_cmd,
+        ["foamCloneCase", os.fspath(case_source), os.fspath(case_dir)],
     )
 
     u_file = case_dir / "0/U"
@@ -183,8 +198,8 @@ def prepare_case_for_parameters(
     )
     transport_file.write_text(updated_transport)
 
-    run_openfoam_command("blockMesh", activate_cmd=activate_cmd, cwd=case_dir)
-    run_openfoam_command("icoFoam", activate_cmd=activate_cmd, cwd=case_dir)
+    run_openfoam_command(["blockMesh"], cwd=case_dir)
+    run_openfoam_command(["icoFoam"], cwd=case_dir)
 
 
 def find_latest_time_dir(case_dir: Path) -> Path:
@@ -392,6 +407,7 @@ def parse_viscosities(raw: str) -> List[float]:
 
 def main() -> None:
     args = parse_args()
+    check_openfoam_available()
     foam_module = load_foam_to_python()
     case_source = resolve_case_source(args.case_source)
     if not case_source.exists():
@@ -410,7 +426,6 @@ def main() -> None:
             case_dir=case_dir,
             lid_velocity=lid_velocity,
             viscosity=viscosity,
-            activate_cmd=args.openfoam_activate,
             force=args.force,
         )
         snapshots = extract_u_snapshots(

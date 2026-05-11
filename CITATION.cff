@@ -5,6 +5,6 @@ authors:
   given-names: "Shenhui"
   orcid: "https://orcid.org/0009-0006-9046-0220"
 title: "PODImodels: Model Order Reduction using Proper Orthogonal Decomposition with Interpolation"
-version: 0.0.3
-date-released: 2025-09-05
+version: 0.0.4
+date-released: 2026-05-11
 url: "https://github.com/Ruansh233/PODImodels.git"

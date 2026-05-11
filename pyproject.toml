@@ -8,15 +8,25 @@ authors = [
     {name = "Shenhui_Ruan", email = "shenhui.ruan@kit.edu"}
 ]
 description = "A py package to create ROM utilizing PODI method"
-version = "0.0.3"
+version = "0.0.4"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "numpy",
     "scikit-learn",
     "scipy",
     "pyvista",
     "torch"
+]
+
+[project.optional-dependencies]
+openfoam = [
+    "foamToPython @ git+https://github.com/Ruansh233/foamToPython.git"
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
 ]
 
 [tool.setuptools]

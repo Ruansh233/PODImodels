@@ -154,6 +154,22 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# OpenFOAM cavity benchmark outputs
+examples/openfoam_cavity/work/
+examples/openfoam_cavity/results/
+
+# OpenFOAM runtime artifacts
+postProcessing/
+processor*/
+constant/polyMesh/
+[0-9]*/
+log.*
+*.foam
+
+# Local OS/editor noise
+.DS_Store
+Thumbs.db
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore

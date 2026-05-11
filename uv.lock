@@ -2078,30 +2078,27 @@ dependencies = [
     { name = "torch", version = "2.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
 ]
 
-[package.optional-dependencies]
-openfoam = [
-    { name = "foamtopython" },
-]
-
 [package.dev-dependencies]
 dev = [
+    { name = "foamtopython" },
     { name = "pytest", version = "8.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "pytest", version = "9.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "foamtopython", marker = "extra == 'openfoam'", git = "https://github.com/Ruansh233/foamToPython.git" },
     { name = "numpy" },
     { name = "pyvista" },
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "torch" },
 ]
-provides-extras = ["openfoam"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest" }]
+dev = [
+    { name = "foamtopython", git = "https://github.com/Ruansh233/foamToPython.git" },
+    { name = "pytest" },
+]
 
 [[package]]
 name = "pooch"

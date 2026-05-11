@@ -4,7 +4,7 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**PODImodels** (Proper Orthogonal Decomposition-based Interpolation Models) is a Python package for creating Reduced-Order Models (ROM) using POD combined with various machine learning techniques. It provides a unified framework for reduced-order modeling of high-dimensional field data, particularly useful for computational fluid dynamics and other physics-based simulations.
+**[PODImodels](https://github.com/Ruansh233/PODImodels)** (Proper Orthogonal Decomposition-based Interpolation Models) is a Python package for creating Reduced-Order Models (ROM) using POD combined with various machine learning techniques. It provides a unified framework for reduced-order modeling of high-dimensional field data, particularly useful for computational fluid dynamics and other physics-based simulations.
 
 ## Features
 
